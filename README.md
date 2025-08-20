@@ -1,2 +1,2 @@
-# VibeShpere--Mood-based-entertainment-recommendation-system
-"VibeSphere is a mood-based content recommendation system that efficiently stores and retrieves user emotions and personalized media suggestions using a structured relational database."
+# VibeShpere--Book-recommendation-system
+"Book Recommendation System – A front-end web application that allows users to search, filter, and explore personalized book suggestions through an interactive and responsive interface."

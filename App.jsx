@@ -909,15 +909,21 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
       const info = item.volumeInfo || {};
       const title = info.title || 'Untitled';
       const authors = (info.authors || []).join(', ');
-      const thumb = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
+      const images = info.imageLinks || {};
+      const thumb = images.thumbnail || images.smallThumbnail || images.medium || images.large || null;
+      const isbn = (info.industryIdentifiers && info.industryIdentifiers[0]?.identifier) || '';
       
       const entry = {
         id: item.id,
         title,
         authors,
-        cover: thumb ? thumb.replace(/^http:/, 'https:') : undefined,
+        cover: thumb ? thumb.replace(/^http:/, 'https:') : null,
+        thumbnail: thumb ? thumb.replace(/^http:/, 'https:') : null,
+        isbn: isbn.replace(/[^0-9X]/gi, ''),
         infoLink: info.infoLink
       };
+      
+      console.log('📝 Recording history:', entry);
       
       if (userDataManager) {
         const cur = userDataManager.getData('history', []) || [];

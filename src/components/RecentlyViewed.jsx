@@ -90,16 +90,21 @@ export default function RecentlyViewed({ userDataManager }) {
       ) : (
         <div className="overflow-x-auto -mx-3 py-2">
           <div className="flex gap-4 px-3">
-            {history.map((h) => (
+            {history.map((h) => {
+              console.log('📚 Rendering history item:', h.title, 'Cover:', h.cover, 'ISBN:', h.isbn);
+              return (
               <div key={h.id} className="w-56 flex-shrink-0">
                 <div className="book-tile">
                   <article className="book-card">
                     <div className="book-cover-wrap">
                       <BookImage
-                        primaryUrl={h.cover}
-                        altIdentifiers={{ isbn: h.isbn }}
+                        primaryUrl={h.cover || h.thumbnail}
+                        altIdentifiers={{ 
+                          isbn: h.isbn,
+                          googleBooksId: h.id 
+                        }}
                         title={h.title}
-                        author={h.authors}
+                        author={h.authors || h.author}
                         className="book-cover"
                       />
                     </div>
@@ -113,7 +118,8 @@ export default function RecentlyViewed({ userDataManager }) {
                   </article>
                 </div>
               </div>
-            ))}
+            )}
+            )}
           </div>
         </div>
       )}

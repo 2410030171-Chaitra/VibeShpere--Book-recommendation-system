@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MoodSelector from './MoodSelector';
+import BookImage from './BookImage';
 import { getRecommendations, getTrendingBooks } from '../services/recommendations';
 import fetchBooks from '../services/googleBooks';
 
@@ -314,10 +315,6 @@ export default function DiscoverPage({ userDataManager }) {
 }
 
 function BookCard({ book, isFavorite, onToggleFavorite, onView }) {
-  const [imageError, setImageError] = useState(false);
-
-  const defaultCover = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e2e8f0' width='200' height='300'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%2364748b'%3E${encodeURIComponent(book.title.substring(0, 20))}%3C/text%3E%3C/svg%3E`;
-
   const handleViewClick = () => {
     if (onView) onView(book);
   };
@@ -325,12 +322,12 @@ function BookCard({ book, isFavorite, onToggleFavorite, onView }) {
   return (
     <article className="book-card group animate-fade-in">
       <div className="relative overflow-hidden rounded-xl mb-3">
-        <img
-          src={imageError ? defaultCover : (book.cover || book.thumbnail || defaultCover)}
-          alt={book.title}
+        <BookImage
+          primaryUrl={book.cover || book.thumbnail}
+          altIdentifiers={{ isbn: book.isbn }}
+          title={book.title}
+          author={book.author}
           className="w-full aspect-[2/3] object-cover group-hover:scale-110 transition-transform duration-500"
-          onError={() => setImageError(true)}
-          loading="lazy"
         />
         
         {/* Favorite button */}

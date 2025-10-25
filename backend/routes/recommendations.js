@@ -80,16 +80,21 @@ function pickCover(info){
   // Prefer larger images first
   let cover = images.large || images.medium || images.thumbnail || images.smallThumbnail;
   
-  // If no Google Books cover, try Open Library as fallback (without default=false)
+  // If no Google Books cover, try Open Library as fallback
   if (!cover) {
     const isbn = bestIsbn(info);
     if (isbn) {
-      // Open Library will show a generic placeholder if cover doesn't exist
+      // Open Library will return a placeholder if cover doesn't exist
       cover = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
     }
   }
   
-  return normalizeImage(cover || null);
+  // Final fallback to server default - frontend will handle this
+  if (!cover) {
+    cover = '/assets/default_cover.svg';
+  }
+  
+  return normalizeImage(cover);
 }
 
 function cleanItem(item){
@@ -167,10 +172,10 @@ router.get('/trending', async (req, res) => {
   }
 });
 
-// GET /api/recommendations/search?q=...&limit=...
+// GET /api/recommendations/search?q=...&type=author|title|general&limit=...
 router.get('/search', async (req, res) => {
   try {
-    let { q = '', limit = '60' } = req.query;
+    let { q = '', type = 'general', limit = '60' } = req.query;
     limit = Math.min(parseInt(limit,10)||60, 200);
     if(!q) q = 'bestsellers';
     
@@ -179,47 +184,56 @@ router.get('/search', async (req, res) => {
     let isAuthorSearch = false;
     let authorName = '';
     
-    // Check if already formatted (inauthor:, intitle:, subject:)
-    if (m.startsWith('inauthor:')) {
-      qq = m;
+    // Handle explicit type parameter
+    if (type === 'author') {
+      authorName = m;
+      qq = `inauthor:${m}`;
       isAuthorSearch = true;
-      authorName = m.replace('inauthor:', '').trim();
-    }
-    else if (m.startsWith('intitle:') || m.startsWith('subject:')) {
-      qq = m;
-    }
-    // Explicit author prefixes: author:Name or by Name -> inauthor:Name
-    else if (m.match(/^author\s*:\s*(.+)$/i)) {
-      const match = m.match(/^author\s*:\s*(.+)$/i);
-      authorName = match[1];
-      qq = `inauthor:${authorName}`;
-      isAuthorSearch = true;
-    }
-    else if (m.match(/^by\s+(.+)$/i)) {
-      const match = m.match(/^by\s+(.+)$/i);
-      authorName = match[1];
-      qq = `inauthor:${authorName}`;
-      isAuthorSearch = true;
-    }
-    // genre:Fantasy -> subject:Fantasy
-    else if (m.match(/^genre\s*:\s*(.+)$/i)) {
-      const match = m.match(/^genre\s*:\s*(.+)$/i);
-      qq = `subject:${match[1]}`;
-    }
-    // For multi-word queries that look like book titles, use intitle: for better results
-    else if (m.split(' ').length >= 2 && !m.match(/^\d+$/)) {
+    } else if (type === 'title') {
       qq = `intitle:${m}`;
-    }
-    // Otherwise use as-is
-    else {
-      qq = m;
+    } else if (type === 'general') {
+      // Auto-detect format or use general search
+      if (m.startsWith('inauthor:')) {
+        qq = m;
+        isAuthorSearch = true;
+        authorName = m.replace('inauthor:', '').trim();
+      }
+      else if (m.startsWith('intitle:') || m.startsWith('subject:')) {
+        qq = m;
+      }
+      // Explicit author prefixes: author:Name or by Name -> inauthor:Name
+      else if (m.match(/^author\s*:\s*(.+)$/i)) {
+        const match = m.match(/^author\s*:\s*(.+)$/i);
+        authorName = match[1];
+        qq = `inauthor:${authorName}`;
+        isAuthorSearch = true;
+      }
+      else if (m.match(/^by\s+(.+)$/i)) {
+        const match = m.match(/^by\s+(.+)$/i);
+        authorName = match[1];
+        qq = `inauthor:${authorName}`;
+        isAuthorSearch = true;
+      }
+      // genre:Fantasy -> subject:Fantasy
+      else if (m.match(/^genre\s*:\s*(.+)$/i)) {
+        const match = m.match(/^genre\s*:\s*(.+)$/i);
+        qq = `subject:${match[1]}`;
+      }
+      // For multi-word queries that look like book titles, use intitle: for better results
+      else if (m.split(' ').length >= 2 && !m.match(/^\d+$/)) {
+        qq = `intitle:${m}`;
+      }
+      // Otherwise use as-is
+      else {
+        qq = m;
+      }
     }
 
-    const key = `search:${qq}:${limit}`;
+    const key = `search:${type}:${qq}:${limit}`;
     const c = getCached(key); if(c) return res.json(c);
     
-    // Fetch extra books to ensure enough after filtering - increased for better coverage
-    const fetchAmount = Math.max(limit*3, 200); // Increased from 120 to 200
+    // Fetch extra books to ensure enough after filtering
+    const fetchAmount = Math.max(limit*3, 200);
     const pool = await fetchMany(qq, fetchAmount);
     let cleaned = pool.map(cleanItem).filter(Boolean);
     
@@ -230,7 +244,7 @@ router.get('/search', async (req, res) => {
         const bookAuthors = book.authors || [];
         return bookAuthors.some(author => {
           const authorNameLower = String(author || '').toLowerCase();
-          // Match full name or last name
+          // Match full name or significant parts of name
           return authorNameLower.includes(authorLower) || 
                  authorLower.split(' ').some(part => part.length > 2 && authorNameLower.includes(part));
         });

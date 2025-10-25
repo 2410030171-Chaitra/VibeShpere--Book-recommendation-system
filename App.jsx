@@ -7,122 +7,7 @@ import fetchBooks, { fetchBooksMany } from "./src/services/googleBooks.js";
 import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
 import { getTrendingBooks } from "./src/services/recommendations.js";
 import apiService from "./src/services/api.js";
-
-// Generate a simple SVG data-URL placeholder using the book title/author so
-// each book has a unique fallback image when the remote cover fails.
-function escapeSvgText(s = '') {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// Reusable cover image component that proactively verifies the provided src,
-// attempts a Google Books thumbnail lookup if the src fails, and finally
-// falls back to a unique SVG placeholder.
-function CoverImage({ src, title, author, className, alt, style, loading = 'lazy' }) {
-  const [coverSrc, setCoverSrc] = React.useState(src || svgPlaceholder(title, author));
-
-  // Keep the initial src, but don't attempt to pre-fetch remote images (can be blocked by CORS).
-  // Rely on the <img> element's natural load/error, then try Google Books, then SVG placeholder.
-  React.useEffect(() => {
-    setCoverSrc(src || svgPlaceholder(title, author));
-  }, [src, title, author]);
-
-  async function handleImgError(e) {
-    try {
-      e.currentTarget.onerror = null; // prevent loops
-      // First try Google Books thumbnail
-      const g = await fetchGoogleThumbnail(title, author);
-      if (g) {
-        e.currentTarget.src = g;
-        return;
-      }
-    } catch (err) {
-      // ignore and fall through to SVG
-    }
-    e.currentTarget.src = svgPlaceholder(title, author);
-  }
-
-  return (
-    <img
-      src={coverSrc}
-      alt={alt || title}
-      className={className}
-      style={style}
-      loading={loading}
-      onError={handleImgError}
-      onLoad={async (ev) => {
-        try {
-          const img = ev.currentTarget;
-          // If the loaded image is very small (low-res thumbnail), attempt Google Books for a higher-res
-          if (img.naturalWidth && img.naturalWidth < 120) {
-            const g2 = await fetchGoogleThumbnail(title, author);
-            if (g2 && g2 !== img.src) img.src = g2;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }}
-    />
-  );
-}
-
-function stringToColor(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = str.charCodeAt(i) + ((h << 5) - h);
-    h = h & h;
-  }
-  const hue = Math.abs(h) % 360;
-  return `hsl(${hue} 70% 90%)`;
-}
-
-function svgPlaceholder(title = '', subtitle = '') {
-  const bg = stringToColor(title + subtitle);
-  const t = escapeSvgText(title || 'Untitled');
-  const s = escapeSvgText(subtitle || '');
-  const svg = `
-  <svg xmlns='http://www.w3.org/2000/svg' width='600' height='900' viewBox='0 0 600 900'>
-    <rect width='100%' height='100%' fill='${bg}' />
-    <text x='50%' y='45%' text-anchor='middle' font-family='Georgia, serif' font-size='28' fill='#5b3b5b'>${t}</text>
-    <text x='50%' y='55%' text-anchor='middle' font-family='Inter, system-ui, sans-serif' font-size='18' fill='#6b516b'>${s}</text>
-  </svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
-// Try to fetch a thumbnail from Google Books for a given title/author. Returns thumbnail URL or null.
-async function fetchGoogleThumbnail(title = '', author = '') {
-  try {
-    const q = encodeURIComponent(`intitle:${title}` + (author ? `+inauthor:${author}` : ''));
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const item = json.items && json.items[0];
-    const info = item && item.volumeInfo;
-    const thumb = info && (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
-    return thumb ? thumb.replace(/^http:\/\//, 'https://') : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-// Shared handler used when an img fails to load. It will attempt Google Books lookup,
-// then fallback to an SVG placeholder.
-function handleImageErrorFactory(title, author) {
-  return async function onImgError(e) {
-    try {
-      // prevent loops
-      e.currentTarget.onerror = null;
-      const g = await fetchGoogleThumbnail(title, author);
-      if (g) {
-        e.currentTarget.src = g;
-        return;
-      }
-    } catch (err) {
-      // ignore
-    }
-    e.currentTarget.src = svgPlaceholder(title, author);
-  };
-}
+import BookImage from "./src/components/BookImage.jsx";
 
 /**
  * VibeSphere — A serene, modern book recommendation website
@@ -861,8 +746,9 @@ function BookCard({ book, onAdd, onWhy }) {
   return (
     <article className="book-card group animate-fade-in" style={{width: '100%', height: '320px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column'}}>
       <div className="relative overflow-hidden flex-shrink-0" style={{height: '140px'}}>
-        <CoverImage
-          src={book.cover}
+        <BookImage
+          primaryUrl={book.cover}
+          altIdentifiers={{ isbn: book.isbn }}
           title={book.title}
           author={book.author}
           className="book-cover img-contain group-hover:scale-110 transition-transform duration-500"
@@ -1132,7 +1018,7 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
                     <div className="book-tile">
                       <article className="book-card">
                       <div className="book-cover-wrap">
-                            {thumb ? <CoverImage className="book-cover img-contain" src={thumb.replace(/^http:/,'https:')} title={title} author={authors} alt={`${title} cover`} /> : <div className="skeleton book-cover" />}
+                            {thumb ? <BookImage className="book-cover img-contain" primaryUrl={thumb.replace(/^http:/,'https:')} title={title} author={authors} /> : <div className="skeleton book-cover" />}
                       </div>
                       <div className="book-info">
                         <h4 className="book-title">{title}</h4>
@@ -1171,7 +1057,7 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
                         <div className="book-tile">
                           <article className="book-card">
                           <div className="book-cover-wrap">
-                            {b.cover ? <CoverImage className="book-cover img-contain" src={b.cover.replace(/^http:/,'https:')} title={b.title} author={b.authors || b.author} alt={`${b.title} cover`} /> : <div className="skeleton book-cover" />}
+                            {b.cover ? <BookImage className="book-cover img-contain" primaryUrl={b.cover.replace(/^http:/,'https:')} title={b.title} author={b.authors || b.author} /> : <div className="skeleton book-cover" />}
                           </div>
                           <div className="book-info">
                             <h4 className="book-title">{b.title}</h4>
@@ -1212,7 +1098,7 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
                       <div className="book-tile">
                         <article className="book-card">
                         <div className="book-cover-wrap">
-                          {thumb ? <CoverImage className="book-cover img-contain" src={thumb.replace(/^http:/,'https:')} title={title} author={authors} alt={`${title} cover`} /> : <div className="skeleton book-cover" />}
+                          {thumb ? <BookImage className="book-cover img-contain" primaryUrl={thumb.replace(/^http:/,'https:')} title={title} author={authors} /> : <div className="skeleton book-cover" />}
                         </div>
                         <div className="book-info">
                           <h4 className="book-title">{title}</h4>
@@ -1247,12 +1133,11 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
                   <div className="book-tile">
                     <article className="book-card">
                       <div className="book-cover-wrap">
-                        <CoverImage 
+                        <BookImage 
                           className="book-cover img-contain" 
-                          src={book.cover} 
+                          primaryUrl={book.cover} 
                           title={book.title} 
-                          author={book.author} 
-                          alt={`${book.title} cover`} 
+                          author={book.author}
                         />
                       </div>
                       <div className="book-info">

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cozy Bookshelf — Discover Books</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <h1>Cozy Bookshelf</h1>
+        <p class="tag">Warm reads for curious minds</p>
+      </div>
+      <form id="search-form" class="search-form" aria-label="Search books">
+        <input id="search-input" type="search" placeholder="Search by title, author or keyword..." aria-label="Search" />
+        <button type="submit" class="btn">Search</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <section class="controls">
+      <button class="pill" data-query="" id="all-btn">All Genres</button>
+      <button class="pill" data-query="subject:fiction" id="fiction-btn">Fiction</button>
+      <button class="pill" data-query="subject:nonfiction" id="nonfiction-btn">Non‑Fiction</button>
+      <button class="pill" data-query="intitle:classics" id="classics-btn">Classics</button>
+    </section>
+
+    <section id="books-grid" class="books-grid" aria-live="polite">
+      <!-- Book cards inserted here -->
+    </section>
+
+    <div id="status" class="status">Type a search and press Enter or click "Search".</div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built with warmth — data from Google Books API</p>
+    </div>
+  </footer>
+
+  <script src="./script.js" type="module"></script>
+</body>
+</html>

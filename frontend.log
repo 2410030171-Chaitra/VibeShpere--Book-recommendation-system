@@ -1,0 +1,141 @@
+
+> vibesphere@1.0.0 dev
+> vite --host 0.0.0.0
+
+
+  VITE v5.4.20  ready in 187 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.100:5173/
+12:10:13 AM [vite] hmr update /App.jsx, /src/index.css
+12:11:21 AM [vite] hmr update /App.jsx, /src/index.css
+12:11:39 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css
+12:12:07 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css
+12:12:12 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css
+12:12:12 AM [vite] Internal server error: /Users/devarshettypravalika/Desktop/fedf project/src/components/DiscoverPage.jsx: Unexpected token (392:0)
+
+  390 |   );
+  391 | }
+> 392 |
+      | ^
+  Plugin: vite:react-babel
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/components/DiscoverPage.jsx:392:0
+  390|    );
+  391|  }
+  392|  
+     |  ^
+      at constructor (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6630:19)
+      at JSXParserMixin.unexpected (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6650:16)
+      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11451:16)
+      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4797:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
+      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
+      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
+      at JSXParserMixin.parseExpressionBase (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10788:23)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:39
+      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12431:16)
+      at JSXParserMixin.parseExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:17)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12904:23)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
+      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
+      at JSXParserMixin.parseFunctionBodyAndFinish (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12096:10)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13454:12
+      at JSXParserMixin.withSmartMixTopicForbiddingContext (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12413:14)
+      at JSXParserMixin.parseFunction (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13453:10)
+      at JSXParserMixin.parseFunctionStatement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13134:17)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12899:25)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
+      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
+      at JSXParserMixin.parseFunctionBodyAndFinish (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12096:10)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13454:12
+      at JSXParserMixin.withSmartMixTopicForbiddingContext (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12413:14)
+      at JSXParserMixin.parseFunction (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13453:10)
+      at JSXParserMixin.parseExportDefaultExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13916:19)
+      at JSXParserMixin.parseExport (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13837:25)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12887:27)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseModuleItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12753:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:36)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseProgram (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12634:10)
+      at JSXParserMixin.parseTopLevel (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12624:25)
+      at JSXParserMixin.parse (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:14501:10)
+      at parse (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:14535:38)
+12:12:59 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css
+12:12:59 AM [vite] Internal server error: /Users/devarshettypravalika/Desktop/fedf project/src/components/DiscoverPage.jsx: Unexpected token (392:0)
+
+  390 |   );
+  391 | }
+> 392 |
+      | ^
+  Plugin: vite:react-babel
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/components/DiscoverPage.jsx:392:0
+  390|    );
+  391|  }
+  392|  
+     |  ^
+      at constructor (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:367:19)
+      at JSXParserMixin.raise (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6630:19)
+      at JSXParserMixin.unexpected (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6650:16)
+      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11451:16)
+      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4797:20)
+      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
+      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
+      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
+      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
+      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
+      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
+      at JSXParserMixin.parseExpressionBase (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10788:23)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:39
+      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12431:16)
+      at JSXParserMixin.parseExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:17)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12904:23)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
+      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
+      at JSXParserMixin.parseFunctionBodyAndFinish (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12096:10)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13454:12
+      at JSXParserMixin.withSmartMixTopicForbiddingContext (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12413:14)
+      at JSXParserMixin.parseFunction (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13453:10)
+      at JSXParserMixin.parseFunctionStatement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13134:17)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12899:25)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
+      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
+      at JSXParserMixin.parseFunctionBodyAndFinish (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12096:10)
+      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13454:12
+      at JSXParserMixin.withSmartMixTopicForbiddingContext (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12413:14)
+      at JSXParserMixin.parseFunction (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13453:10)
+      at JSXParserMixin.parseExportDefaultExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13916:19)
+      at JSXParserMixin.parseExport (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13837:25)
+      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12887:27)
+      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
+      at JSXParserMixin.parseModuleItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12753:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:36)
+      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
+      at JSXParserMixin.parseProgram (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12634:10)
+      at JSXParserMixin.parseTopLevel (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12624:25)
+      at JSXParserMixin.parse (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:14501:10)
+      at parse (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:14535:38)
+12:13:07 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css
+12:13:37 AM [vite] hmr update /src/components/DiscoverPage.jsx, /src/index.css

@@ -1,0 +1,21 @@
+{
+  "scannedFiles": [
+    "App.jsx",
+    "App.jsx.bak",
+    "backend/seed.js"
+  ],
+  "total": 29,
+  "missingCount": 0,
+  "badCount": 1,
+  "bad": [
+    {
+      "file": "App.jsx.bak",
+      "line": 251,
+      "cover": "https://images.unsplash.com/photo-1520637836862-4d197d17c89a?q=80&w=600&auto=format&fit=crop",
+      "title": "Mist Over Nilgiris",
+      "ok": false,
+      "status": 404
+    }
+  ],
+  "goodCount": 28
+}

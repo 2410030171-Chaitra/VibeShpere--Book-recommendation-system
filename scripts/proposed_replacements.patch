@@ -1,0 +1,12 @@
+*** Begin Patch
+*** Update File: App.jsx
+@@
+   {
+     id: "b5",
+     title: "Quantum Tea & Other Stories",
+     author: "J. Liu",
+@@
+-    cover: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?q=80&w=600&auto=format&fit=crop",
++    cover: "",
+     rating: 4.1,
+*** End Patch

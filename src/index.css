@@ -1,0 +1,393 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Library Café theme - cozy, warm, modern */
+
+:root{
+  /* Pastel Lavender Café palette */
+  --bg: #F7F2FB; /* soft lavender */
+  --card: rgba(255,255,255,0.98);
+  --title: #2c1b30; /* slightly darker deep plum for contrast */
+  --muted: #5e4859; /* tuned muted plum for improved readability */
+  --accent-1: #CDA4FF; /* lilac */
+  --accent-2: #FFB7D5; /* pastel pink */
+  --radius: 16px;
+  --card-shadow: 0 14px 36px rgba(58,34,78,0.06);
+  --card-shadow-hover: 0 28px 60px rgba(58,34,78,0.10);
+  --glass: rgba(255,255,255,0.65);
+}
+
+/* Night theme override */
+.theme-night {
+  --bg: #1d1b1b;
+  --card: #211f1f;
+  --title: #f7f3ee; /* brighter for higher contrast on dark */
+  --muted: #d9d2cf; /* slightly brighter muted text */
+  --accent-1: #D68F80;
+  --accent-2: #C98F7F;
+}
+
+@layer base{
+  html{scroll-behavior:smooth}
+  body{ background:var(--bg); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:var(--title); -webkit-font-smoothing:antialiased }
+
+  h1,h2,h3,h4,h5{ font-family: 'Playfair Display', serif; color:var(--title) }
+  p,button,input,span{ font-family: Inter, system-ui, sans-serif }
+}
+
+@layer components{
+  /* Cards */
+  .modern-card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--card-shadow); padding:1rem; transition:transform .28s ease, box-shadow .28s ease }
+  .modern-card:hover{ transform: translateY(-6px); box-shadow:var(--card-shadow-hover) }
+
+  .glass-card{ background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.45)); border-radius:var(--radius); padding:1rem; box-shadow:var(--card-shadow) }
+
+  /* Section header with soft gradient */
+  .section-header{ background: linear-gradient(135deg, rgba(205,164,255,0.14), rgba(255,183,213,0.06)); padding:1rem 1.25rem; border-radius:12px; margin-bottom:0.75rem; border: 1px solid rgba(196,162,245,0.12) }
+  .section-title{ font-family: 'Playfair Display', serif; font-size:1.5rem; font-weight:700; margin:0; color:var(--title) }
+  .section-sub{ color:var(--muted); margin-top:0.25rem; font-size:0.95rem }
+
+  /* Authoritative theme overrides (scoped under #root) --------------------------------- */
+  /* These are specific and use !important sparingly to ensure the Pastel Lavender theme
+     is visible even when utility classes are used heavily by components. */
+#root .hero-bg{
+    background-image: url('/assets/hero-lavender.png'), url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=1600&auto=format&fit=crop'), linear-gradient(180deg, rgba(247,242,251,1), rgba(233,221,240,0.6)) !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+}
+#root .hero-figure-img{ filter: saturate(0.95) contrast(0.98) brightness(1) !important; transform: none !important }
+
+#root .book-card{
+    background: var(--card) !important;
+    box-shadow: var(--card-shadow) !important;
+    border: 1px solid rgba(59,47,47,0.06) !important;
+}
+#root .book-card::after{
+    background: linear-gradient(90deg, rgba(205,164,255,0.95), rgba(255,183,213,0.95)) !important;
+    opacity: 0.95 !important;
+}
+#root .book-cover{ box-shadow: 0 12px 36px rgba(90,56,110,0.14) !important; border-radius:8px !important }
+
+  /* end authoritative overrides --------------------------------------------------------- */
+
+  /* Book tile (uniform card) */
+  .book-tile{ width:100%; height:380px; display:flex; flex-direction:column; border-radius:var(--radius); overflow:hidden }
+  .book-card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), var(--card));
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    border-radius:var(--radius);
+    border: 1px solid rgba(59,47,47,0.06);
+    position:relative;
+    box-shadow: 0 16px 38px rgba(59,47,47,0.08);
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease;
+    overflow:visible;
+  }
+  .book-card:hover{
+    transform: translateY(-8px);
+    box-shadow: 0 32px 80px rgba(59,47,47,0.14);
+  }
+  .book-card::after{
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  height: 6px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background: linear-gradient(90deg, rgba(205,164,255,0.95), rgba(255,183,213,0.95));
+    opacity: 0.9;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  /* Unified cover container: fixed height so all book covers appear uniform */
+  .book-cover-wrap{ width:100%; height:310px; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #fff, #fff); overflow:hidden; border-radius:12px; margin-bottom:0.2rem }
+  .book-cover-wrap > img.book-cover{ width:100% !important; height:100% !important; object-fit:contain !important; object-position:center !important }
+  /* Show the full cover image (no cropping) while keeping uniform size. Images will be letterboxed if aspect ratios differ. */
+  .book-cover{ display:block; width:100% !important; max-width:100% !important; height:100% !important; object-fit:contain !important; object-position:center !important; border-radius:10px; margin:0 }
+
+  /* Card entrance animation */
+  .animate-fade-in{ opacity:0; transform: translateY(8px); animation: fadeInUp 520ms ease forwards }
+  @keyframes fadeInUp{ to{ opacity:1; transform: translateY(0) } }
+
+  /* Hero (top banner) styling for pastel lavender café look */
+  .hero-figure-img{ transition: transform 700ms ease; filter: saturate(0.9) contrast(0.95) brightness(0.98); }
+  .hero-figure-img:hover{ transform: scale(1.03); }
+  .hero-overlay{ background: linear-gradient(180deg, rgba(20,12,28,0.48), rgba(20,12,28,0.22)); backdrop-filter: blur(2px); }
+  .hero-bg{
+    background-image: url('/assets/hero-lavender.png'), url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=1600&auto=format&fit=crop'), linear-gradient(180deg, rgba(247,242,251,1), rgba(233,221,240,0.6));
+    background-size: cover, cover, 100% 100%;
+    background-position: center center, center center, center center;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    display: block;
+  }
+  /* Center hero content and ensure legibility */
+  .hero-overlay .hero-title-highlight{ font-size:1.05em }
+  .hero-overlay { display:flex; align-items:center; }
+
+  /* CTA styles specifically in hero */
+  .hero-overlay .btn-primary{ padding:0.75rem 1.25rem; border-radius:14px; font-weight:700 }
+  .hero-overlay .btn-ghost{ padding:0.6rem 1rem; border-radius:12px }
+  .hero-title-highlight{ display:block; background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight:800; font-size:1.15em }
+
+  /* Greeting animation and "Today's Vibe" box */
+  .greet-fade{ opacity:0; transform: translateY(6px); animation: greetFadeIn 650ms ease forwards 120ms }
+  .greet-text{ display:inline-block }
+  .wave-emoji{ display:inline-block; transform-origin: 60% 40%; animation: wave 1600ms ease-in-out 500ms infinite }
+
+  @keyframes greetFadeIn{
+    from{ opacity:0; transform: translateY(6px) }
+    to{ opacity:1; transform: translateY(0) }
+  }
+
+  @keyframes wave{
+    0%{ transform: rotate(0deg) }
+    15%{ transform: rotate(14deg) }
+    30%{ transform: rotate(-8deg) }
+    45%{ transform: rotate(14deg) }
+    60%{ transform: rotate(-4deg) }
+    100%{ transform: rotate(0deg) }
+  }
+
+  .today-vibe{ display:inline-flex; align-items:center; gap:10px; margin-top:0.5rem; padding:8px 12px; border-radius:999px; background: linear-gradient(90deg, rgba(205,164,255,0.10), rgba(255,183,213,0.06)); border: 1px solid rgba(196,162,245,0.14); box-shadow: 0 6px 18px rgba(58,34,78,0.04) }
+  .vibe-emoji{ font-size:1.05rem; opacity:0.95 }
+  .vibe-text{ font-size:0.95rem; color:var(--muted); font-weight:600 }
+  /* Skeleton / shimmer for loading book results */
+  .skeleton{ background: linear-gradient(90deg, rgba(240,236,247,1), rgba(250,246,254,1)); border-radius:8px; }
+  .skeleton-line{ height:10px; margin:8px 0; border-radius:6px; background: linear-gradient(90deg, rgba(235,229,245,1), rgba(250,246,254,1)); }
+  .skeleton.shimmer{ height:100%; width:100%; border-radius:8px; background: linear-gradient(90deg, rgba(235,229,245,1) 0%, rgba(246,244,250,1) 40%, rgba(235,229,245,1) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+  .skeleton-card{ overflow:hidden; }
+  @keyframes shimmer{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
+
+  /* Sound hint (visual) for hover-enabled state */
+  .hover-sound-enabled .book-card:hover{ box-shadow: 0 26px 60px rgba(58,34,78,0.12); }
+
+  /* Tagline small style under logo */
+  .tagline{ opacity:0.95; color: var(--muted); }
+
+  /* Make book tiles more visible against light backgrounds */
+  .book-tile { padding: 0.4rem; background: transparent; }
+  /* (strengthened above) card border/shadow handled in unified .book-card block */
+  .book-cover-wrap { background: linear-gradient(180deg, rgba(255,248,246,1), rgba(255,255,255,1)); }
+  .book-cover { box-shadow: 0 12px 36px rgba(90,56,110,0.12); border-radius:8px; }
+
+  /* background cover used by explore gallery to ensure uniform visible size */
+  .cover-bg{ width:100%; height:100%; background-size:cover; background-position:center; border-radius:10px }
+
+  /* Explore-specific cover frame: exact 200x290px (2:3-ish) to enforce uniformity */
+  /* Unified cover frame used across the app for consistent covers */
+  .cover-frame { width:200px; height:290px; display:flex; align-items:center; justify-content:center; background: #f7f4f8; border-radius:10px; overflow:hidden }
+  .cover-img { width:200px; height:290px; object-fit:contain; display:block; background: #fff }
+
+  /* Center cover inside book-cover-wrap (which may be wider) */
+  .book-cover-wrap{ display:flex; align-items:center; justify-content:center }
+  .book-info { padding: 0.5rem 0.7rem 0.55rem; }
+  .book-title { font-weight: 700; color: var(--title); }
+
+  .book-info{ padding:0.5rem 0.7rem 0.55rem; display:flex; flex-direction:column; gap:0.3rem; flex:1 }
+  .book-title{ font-family: 'Playfair Display', serif; font-size:1.02rem; line-height:1.2; color:var(--title); margin:0 0 0.1rem 0 }
+  .book-authors{ color:var(--muted); font-size:0.9rem; line-height:1.25; margin:0.05rem 0 0 }
+  .book-desc{ color:var(--muted); font-size:0.88rem; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-clamp:2; overflow:hidden; margin-top:0.1rem }
+
+  .card-footer{ margin-top:auto; display:flex; align-items:center; gap:0.5rem }
+  .view-link{ color:var(--accent-1); font-weight:600; text-decoration:none }
+
+  /* Buttons */
+  .btn-primary{ background: linear-gradient(90deg, rgba(205,164,255,0.95), rgba(255,183,213,0.95)); color:white; padding:0.6rem 1rem; border-radius:12px; border:none; cursor:pointer; transition:box-shadow .2s ease, transform .18s ease; box-shadow: 0 8px 30px rgba(157,106,214,0.12) }
+  .btn-primary:hover{ box-shadow: 0 14px 44px rgba(157,106,214,0.14); transform: translateY(-3px) }
+  .btn-ghost{ background:transparent; border:1px solid rgba(59,47,47,0.06); padding:0.4rem 0.8rem; border-radius:10px }
+
+  .btn-primary:focus{ outline: 3px solid rgba(205,164,255,0.28); outline-offset: 3px }
+  .btn-ghost:focus{ outline: 2px solid rgba(59,47,47,0.06); outline-offset: 2px }
+
+  /* Input */
+  .input-modern{ width:100%; padding:0.9rem 1rem; border-radius:12px; border:1px solid rgba(59,47,47,0.06); background:linear-gradient(180deg, #fff, #fff); }
+  .input-modern:focus{ box-shadow: 0 6px 22px rgba(157,106,214,0.06); outline: 3px solid rgba(205,164,255,0.12); outline-offset:2px }
+
+  /* Tiny subtle hover glow for interactive elements */
+  .hover-glow{ transition: box-shadow .22s ease; }
+  .hover-glow:hover{ box-shadow: 0 8px 30px rgba(242,181,160,0.12) }
+
+  /* Theme switch */
+  .theme-switch{ display:inline-flex; align-items:center; cursor:pointer }
+  .switch-track{ width:64px; height:32px; background:linear-gradient(90deg,#fff,#fff); border-radius:999px; position:relative; box-shadow:0 6px 20px rgba(59,47,47,0.06); display:flex; align-items:center; padding:4px }
+  .switch-track.day{ background: linear-gradient(90deg, rgba(246,224,217,1), rgba(255,248,245,1)) }
+  .switch-track.night{ background: linear-gradient(90deg, rgba(60,60,70,0.95), rgba(34,34,44,0.95)); }
+  .switch-thumb{ width:24px; height:24px; background:#fff; border-radius:50%; box-shadow:0 8px 20px rgba(0,0,0,0.08); transform:translateX(0); transition:transform .28s cubic-bezier(.2,.9,.2,1), background .28s }
+  .switch-thumb.to-night{ transform: translateX(30px); background: linear-gradient(90deg,var(--accent-1),var(--accent-2)) }
+  .switch-icons{ position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 8px; pointer-events:none }
+  .switch-icons .sun{ opacity:1; transition:opacity .2s }
+  .switch-icons .moon{ opacity:1; transition:opacity .2s }
+
+  /* Header polish */
+  header.sticky{ padding-top:0.5rem; padding-bottom:0.5rem }
+  header.sticky nav button{ color: var(--title); }
+  .theme-night header.sticky nav button{ color: color-mix(in srgb, var(--title) 92%, transparent); }
+  .theme-night header.sticky nav button:hover{ background: rgba(255,255,255,0.08); }
+
+  /* Particles (decorative, optional) */
+  .background-particles{ position: absolute; inset:0; pointer-events:none; overflow:hidden }
+  .particle{ position:absolute; width:6px; height:6px; background:rgba(230,154,141,0.12); border-radius:50%; animation: floaty 8s linear infinite }
+  @keyframes floaty{ 0%{ transform:translateY(0) } 50%{ transform:translateY(-30px) } 100%{ transform:translateY(0) } }
+}
+
+@layer utilities{
+  .grid-responsive{ display: grid; gap: 1.5rem; grid-template-columns: repeat(1, minmax(0,1fr)); }
+  @media (min-width: 768px){ .grid-responsive{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (min-width: 1024px){ .grid-responsive{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (min-width: 1280px){ .grid-responsive{ grid-template-columns: repeat(4, minmax(0,1fr)); } }
+  .line-clamp-2{ overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-clamp: 2; }
+  .line-clamp-3{ overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; line-clamp: 3; }
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px){
+  .book-tile{ height:360px }
+  /* Smaller cover height for mid-sized screens */
+  .book-cover-wrap{ height:180px }
+}
+
+/* Explore page: match card size to reference image and home tiles */
+.explore-page .book-tile{ height:460px; width: 15rem; margin-left:auto; margin-right:auto; padding:0.2rem; }
+.explore-page .book-cover-wrap{ height:340px; margin-bottom:0.15rem; }
+.explore-page .book-info{ padding:0.45rem 0.6rem 0.5rem; }
+/* Grid override: fixed 15rem columns to match home tile width and keep consistent card size */
+.explore-page .grid-responsive{ display:grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 15rem)); justify-content: center; gap: 1.5rem; }
+@media (max-width: 1024px) {
+  .explore-page .book-cover-wrap{ height:240px; }
+  .explore-page .book-tile{ height:380px; }
+}
+@media (max-width: 768px) {
+  .explore-page .book-cover-wrap{ height:180px; }
+  .explore-page .book-tile{ height:360px; }
+}
+
+/* Explore: keep titles tidy and descriptions to a single line for consistent card heights */
+.explore-page .book-title{ display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:0.1rem }
+.explore-page .book-desc{ display:-webkit-box; -webkit-line-clamp:1; line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; margin-top:0.1rem }
+.explore-page .book-authors{ display:-webkit-box; -webkit-line-clamp:1; line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; font-size:0.9rem }
+/* Subtle edge to define the cover inside the light card */
+.explore-page .book-cover{ box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
+
+/* Explore only: use contain so the full cover is visible with uniform framing */
+.explore-page .book-cover-wrap > img.book-cover{ object-fit: contain !important; }
+
+/* subtle scrollbar styling for horizontal rows */
+.overflow-x-auto::-webkit-scrollbar{ height:8px }
+.overflow-x-auto::-webkit-scrollbar-thumb{ background: linear-gradient(90deg, rgba(230,154,141,0.25), rgba(242,181,160,0.25)); border-radius:999px }
+
+/* Smooth theme transitions */
+.theme-transition{ transition: background-color 360ms ease, color 360ms ease }
+
+/* Profile dropdown */
+.profile-menu{ position:relative }
+.profile-pop{ position:absolute; right:0; top:calc(100% + 8px); background:var(--card); border-radius:12px; box-shadow:var(--card-shadow); min-width:160px; padding:8px; z-index:40 }
+.profile-pop a, .profile-pop button{ display:block; width:100%; text-align:left; padding:8px 10px; border-radius:8px; color:var(--title); background:transparent; border:none }
+.profile-pop a:hover, .profile-pop button:hover{ background: linear-gradient(90deg, rgba(230,154,141,0.06), rgba(242,181,160,0.04)) }
+
+/* Switch thumb small glow */
+.switch-thumb{ will-change: transform, background }
+
+
+/* Responsive Breakpoints */
+@media (max-width: 640px) {
+  /* Mobile cover height (overrides) */
+  .book-cover { height: 12rem; }
+  .modern-card { border-radius: 12px; }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .glass-card { background-color: rgba(15,23,42,0.9); border: 1px solid rgba(71,85,105,0.12); }
+  .modern-card { background-color: rgba(15,23,42,0.9); border: 1px solid rgba(71,85,105,0.08); }
+}
+
+/* Strong visual overrides to ensure theme is visible in the browser (helps when utility classes have higher precedence) */
+body {
+  background: var(--bg) !important;
+  color: var(--title) !important;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial !important;
+  position: relative;
+}
+
+/* Decorative soft floral overlay (very subtle) */
+body::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 12% 10%, rgba(205,164,255,0.06) 0%, rgba(255,255,255,0) 12%), radial-gradient(circle at 88% 80%, rgba(255,183,213,0.04) 0%, rgba(255,255,255,0) 14%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure app content sits above the subtle background pattern */
+#root, .app-root, main { position: relative; z-index: 1 }
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', serif !important;
+  color: var(--title) !important;
+}
+
+.modern-card, .book-card, .glass-card {
+  background: var(--card) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+/* Ensure book covers show full image uniformly (letterboxed if needed) */
+.book-cover { width:auto !important; height:100% !important; object-fit:contain !important; }
+/* Preserve full original image (letterboxed) when requested */
+.book-cover--contain { object-fit: contain !important; background: #fff !important; }
+
+/* Extra guard to ensure full cover is always visible (no cropping) */
+.book-cover--strict{ object-fit: contain !important; width: auto !important; max-width: 100% !important; height: 100% !important; max-height: 100% !important; }
+
+ /* Make wrapper edge-to-edge so covers fill the card area uniformly */
+ .book-cover-wrap { padding: 0; box-sizing: border-box; }
+
+ /* Responsive tweaks: slightly smaller cover heights on narrow screens */
+@media (max-width: 1024px) {
+  .book-cover-wrap { height:260px !important; }
+}
+
+/* --------------------------------------------------------------------------
+   Canonical cover frame enforcement
+
+   The rules below ensure a single 180x270 (2:3) frame is used across the app.
+   They are intentionally specific and use !important where necessary so that
+   utility classes or component-level styles do not break uniform sizing.
+   - .cover-frame: the fixed frame container
+   - .cover-img: the image inside the frame (default fills the frame with cover)
+   - .cover-img.contain: optional modifier to preserve full image without cropping
+   Note: object-fit:cover is the default to keep a consistent filled look; use
+   `.cover-img.contain` if you prefer letterboxing instead.
+  -------------------------------------------------------------------------- */
+.cover-frame { width: 220px !important; height: 310px !important; flex: 0 0 220px !important; display:flex !important; align-items:center !important; justify-content:center !important; background: #f7f4f8 !important; border-radius:12px !important; overflow:hidden !important; padding:4px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.08) !important; }
+.cover-img { width: 100% !important; height: 100% !important; object-fit: contain !important; object-position: center center !important; display:block !important; background: transparent !important; border-radius:8px !important; }
+.cover-img.contain { object-fit: contain !important; background: #fff !important; }
+
+/* Apply canonical sizing to legacy classes used in the app */
+.book-cover-wrap { display:flex !important; align-items:center !important; justify-content:center !important; }
+.book-cover, img.book-cover { width: 100% !important; height: 100% !important; object-fit: contain !important; border-radius:6px !important; }
+
+/* Compatibility aliases used in JSX: */
+/* `img-contain` is used in many places in App.jsx to prefer contain mode */
+.img-contain { object-fit: inherit !important; }
+
+/* Explore-specific image class (kept for backwards compatibility) */
+.explore-cover-img { width: 100% !important; height: 100% !important; object-fit: cover !important; display:block !important; }
+
+@media (max-width: 768px) {
+   .book-cover-wrap { height:180px !important; }
+  .book-cover { height: 12rem; }
+}
+
+/* Small helper to make the theme switch visible */
+.switch-track.day { background: linear-gradient(90deg, rgba(246,224,217,1), rgba(255,248,245,1)) !important; }
+.switch-track.night { background: linear-gradient(90deg, rgba(60,60,70,0.95), rgba(34,34,44,0.95)) !important; }
+
+ /* layout helpers removed to restore original single-column layout */

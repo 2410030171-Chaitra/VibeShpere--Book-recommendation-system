@@ -566,6 +566,49 @@ function Auth({ onAuth }) {
               {tab === "login" ? "🚀 Sign In" : "✨ Create Account"}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-slate-500 font-medium">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Sign-In Button */}
+          <GoogleSignInButton
+            onSuccess={(userData) => {
+              // Create user object from Google data
+              const user = {
+                id: "u_google_" + userData.uid,
+                name: userData.displayName || userData.email.split("@")[0],
+                email: userData.email,
+                photoURL: userData.photoURL,
+                favoriteGenres: ["Mystery", "Romance"],
+                historyTags: ["witty", "twist"],
+                timeBudgetHours: 6,
+              };
+              
+              // Initialize user-specific ratings if they don't exist
+              const existingUserRatings = loadLS(`vibesphere_ratings_${user.id}`, null);
+              if (!existingUserRatings) {
+                saveLS(`vibesphere_ratings_${user.id}`, {});
+              }
+              
+              onAuth(user);
+            }}
+            onError={(error) => {
+              console.error("Google sign-in failed:", error);
+              alert("Failed to sign in with Google. Please try again.");
+            }}
+          />
+
+          {/* Privacy note */}
+          <p className="text-center text-xs text-slate-500 mt-6">
+            By signing in, you agree to our Terms of Service and Privacy Policy
+          </p>
         </div>
       </div>
   </div>

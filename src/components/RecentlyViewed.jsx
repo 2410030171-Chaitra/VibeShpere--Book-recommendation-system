@@ -1,85 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-// Helper to create a beautiful book-like fallback cover
-function createBookCover(title, author = '') {
-  const colors = [
-    { bg: '%234f46e5', text: '%23ffffff' }, // indigo
-    { bg: '%2306b6d4', text: '%23ffffff' }, // cyan
-    { bg: '%2310b981', text: '%23ffffff' }, // emerald
-    { bg: '%23f59e0b', text: '%23ffffff' }, // amber
-    { bg: '%23ec4899', text: '%23ffffff' }, // pink
-    { bg: '%238b5cf6', text: '%23ffffff' }, // violet
-  ];
-  
-  const colorIndex = title.length % colors.length;
-  const color = colors[colorIndex];
-  
-  const titleShort = encodeURIComponent(title.substring(0, 40));
-  const authorShort = author ? encodeURIComponent(author.substring(0, 30)) : '';
-  
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='270' viewBox='0 0 180 270'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:${color.bg};stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:${color.bg};stop-opacity:0.8' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='270' fill='url(%23grad)'/%3E%3Crect x='10' y='20' width='160' height='3' fill='${color.text}' opacity='0.3'/%3E%3Ctext x='90' y='130' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='16' font-weight='bold' fill='${color.text}' style='word-spacing: 100vw;'%3E${titleShort}%3C/text%3E%3Ctext x='90' y='160' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='12' fill='${color.text}' opacity='0.9'%3E${authorShort}%3C/text%3E%3Crect x='10' y='247' width='160' height='3' fill='${color.text}' opacity='0.3'/%3E%3C/svg%3E`;
-}
-
-// HistoryBookCard: renders a single history item with smart cover image handling
-function HistoryBookCard({ h }) {
-  const [imgSrc, setImgSrc] = useState(h.cover || createBookCover(h.title, h.authors));
-  const [attemptedFallback, setAttemptedFallback] = useState(false);
-
-  const handleError = async (e) => {
-    e.currentTarget.onerror = null;
-    
-    // Try fetching from Google Books API once
-    if (!attemptedFallback) {
-      setAttemptedFallback(true);
-      
-      try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(h.title)}&maxResults=1`);
-        const data = await response.json();
-        
-        if (data.items && data.items[0]) {
-          const bookData = data.items[0].volumeInfo;
-          const thumbnail = bookData.imageLinks?.thumbnail || bookData.imageLinks?.smallThumbnail;
-          
-          if (thumbnail) {
-            const httpsThumb = thumbnail.replace(/^http:/, 'https:');
-            setImgSrc(httpsThumb);
-            return;
-          }
-        }
-      } catch (err) {
-        console.log('Could not fetch fallback cover:', err);
-      }
-    }
-    
-    // Final fallback: show beautiful book cover
-    setImgSrc(createBookCover(h.title, h.authors));
-  };
-
-  return (
-    <div className="w-56 flex-shrink-0">
-      <div className="book-tile">
-        <article className="book-card">
-          <div className="book-cover-wrap">
-            <img 
-              src={imgSrc}
-              alt={h.title} 
-              className="book-cover"
-              loading="lazy"
-              onError={handleError}
-            />
-          </div>
-          <div className="book-info">
-            <h4 className="book-title">{h.title}</h4>
-            <p className="book-authors">{h.authors}</p>
-            <div className="mt-auto flex items-center gap-2">
-              <a className="view-link" href={h.infoLink} target="_blank" rel="noopener noreferrer">View</a>
-            </div>
-          </div>
-        </article>
-      </div>
-    </div>
-  );
-}
+import BookImage from './BookImage';
 
 // RecentlyViewed shows a horizontal list of books the user opened recently.
 // It reads/writes from the provided `userDataManager` or from localStorage as a fallback.
@@ -171,7 +91,28 @@ export default function RecentlyViewed({ userDataManager }) {
         <div className="overflow-x-auto -mx-3 py-2">
           <div className="flex gap-4 px-3">
             {history.map((h) => (
-              <HistoryBookCard key={h.id} h={h} />
+              <div key={h.id} className="w-56 flex-shrink-0">
+                <div className="book-tile">
+                  <article className="book-card">
+                    <div className="book-cover-wrap">
+                      <BookImage
+                        primaryUrl={h.cover}
+                        altIdentifiers={{ isbn: h.isbn }}
+                        title={h.title}
+                        author={h.authors}
+                        className="book-cover"
+                      />
+                    </div>
+                    <div className="book-info">
+                      <h4 className="book-title">{h.title}</h4>
+                      <p className="book-authors">{h.authors}</p>
+                      <div className="mt-auto flex items-center gap-2">
+                        <a className="view-link" href={h.infoLink} target="_blank" rel="noopener noreferrer">View</a>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              </div>
             ))}
           </div>
         </div>

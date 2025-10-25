@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import fetchBooks, { fetchBooksMany } from '../services/googleBooks';
 import apiService from '../services/api';
+import BookImage from './BookImage';
 import '../index.css';
 
 // Helpers to prefer Open Library covers when an ISBN is available (better coverage, fewer placeholders)
@@ -13,103 +14,6 @@ function getBestIsbn(info){
 function openLibCoverUrl(isbn){
   if(!isbn) return null;
   return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
-}
-
-// Helper to create a beautiful book-like fallback cover
-function createBookCover(title, author = '') {
-  const colors = [
-    { bg: '%234f46e5', text: '%23ffffff' }, // indigo
-    { bg: '%2306b6d4', text: '%23ffffff' }, // cyan
-    { bg: '%2310b981', text: '%23ffffff' }, // emerald
-    { bg: '%23f59e0b', text: '%23ffffff' }, // amber
-    { bg: '%23ec4899', text: '%23ffffff' }, // pink
-    { bg: '%238b5cf6', text: '%23ffffff' }, // violet
-  ];
-  
-  const colorIndex = title.length % colors.length;
-  const color = colors[colorIndex];
-  
-  const titleShort = encodeURIComponent(title.substring(0, 40));
-  const authorShort = author ? encodeURIComponent(author.substring(0, 30)) : '';
-  
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='270' viewBox='0 0 180 270'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:${color.bg};stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:${color.bg};stop-opacity:0.8' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='270' fill='url(%23grad)'/%3E%3Crect x='10' y='20' width='160' height='3' fill='${color.text}' opacity='0.3'/%3E%3Ctext x='90' y='130' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='16' font-weight='bold' fill='${color.text}' style='word-spacing: 100vw;'%3E${titleShort}%3C/text%3E%3Ctext x='90' y='160' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='12' fill='${color.text}' opacity='0.9'%3E${authorShort}%3C/text%3E%3Crect x='10' y='247' width='160' height='3' fill='${color.text}' opacity='0.3'/%3E%3C/svg%3E`;
-}
-
-// ExploreCover: renders a fixed-size cover frame with smart fallback strategy
-function ExploreCover({ primary, fallback, title, authors }) {
-  const [current, setCurrent] = React.useState(primary || fallback || null);
-  const [attemptedFallback, setAttemptedFallback] = React.useState(false);
-  const [failed, setFailed] = React.useState(false);
-
-  // Handle image load errors with smart fallback
-  const handleError = async (e) => {
-    // Try fallback if primary failed
-    if(current && primary && current === primary && fallback){
-      setCurrent(fallback);
-      return;
-    }
-    
-    // Try fetching from Google Books API once
-    if (!attemptedFallback && title) {
-      setAttemptedFallback(true);
-      
-      try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=1`);
-        const data = await response.json();
-        
-        if (data.items && data.items[0]) {
-          const bookData = data.items[0].volumeInfo;
-          const thumbnail = bookData.imageLinks?.thumbnail || bookData.imageLinks?.smallThumbnail;
-          
-          if (thumbnail) {
-            const httpsThumb = thumbnail.replace(/^http:/, 'https:');
-            setCurrent(httpsThumb);
-            return;
-          }
-        }
-      } catch (err) {
-        console.log('Could not fetch fallback cover:', err);
-      }
-    }
-    
-    // Final fallback: show beautiful book cover
-    setCurrent(createBookCover(title, authors));
-  };
-
-  if (failed) {
-    return (
-      <div className="book-cover-wrap">
-        <img
-          className="book-cover"
-          src={createBookCover(title, authors)}
-          alt={title}
-        />
-      </div>
-    );
-  }
-
-  if (!current) {
-    return (
-      <div className="book-cover-wrap">
-        <img
-          className="book-cover"
-          src={createBookCover(title, authors)}
-          alt={title}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="book-cover-wrap">
-      <img
-        className="book-cover book-cover--strict"
-        src={current}
-        alt={title}
-        onError={handleError}
-      />
-    </div>
-  );
 }
 
 export default function GoogleBooksGallery({ userDataManager }) {
@@ -375,18 +279,20 @@ export default function GoogleBooksGallery({ userDataManager }) {
 
           const thumbHigh = normalizeGoogleThumb(thumb);
           const isbn = getBestIsbn(info);
-          const openLib = openLibCoverUrl(isbn);
 
           // Always show books, even without covers (will use fallback)
           return (
             <div key={item.id} className="book-tile">
               <article className="book-card">
-                <ExploreCover 
-                  primary={thumbHigh} 
-                  fallback={openLib} 
-                  title={title} 
-                  authors={authors} 
-                />
+                <div className="book-cover-wrap">
+                  <BookImage
+                    primaryUrl={thumbHigh}
+                    altIdentifiers={{ isbn }}
+                    title={title}
+                    author={authors}
+                    className="book-cover"
+                  />
+                </div>
                 <div className="book-info">
                   <h3 className="book-title">{title}</h3>
                   <p className="book-authors">{authors}</p>

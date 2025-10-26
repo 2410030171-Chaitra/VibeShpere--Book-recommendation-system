@@ -54,7 +54,9 @@ function cleanItem(item){
     description: info.description || info.subtitle || '',
     cover,
     infoLink: info.infoLink || null,
-    publishedDate: info.publishedDate || null
+    publishedDate: info.publishedDate || null,
+    averageRating: info.averageRating || 0,
+    categories: info.categories || []
   };
 }
 
@@ -72,6 +74,32 @@ async function fetchMany(q, total=120){
   for(let i=0;i<pages;i++) reqs.push(fetchPage(q, i*40, 40));
   const results = await Promise.all(reqs);
   return results.flat();
+}
+
+// Lightweight Open Library search for broader coverage (no API key)
+async function fetchOpenLibrarySearch(q, limit = 100){
+  try {
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limit}`;
+    const res = await fetch(url);
+    if(!res.ok) return [];
+    const json = await res.json();
+    return (json.docs || []).map(d => {
+      const cover = d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null;
+      return {
+        id: `OL-${d.key || d.seed || (d.title_suggest||d.title)}`,
+        title: d.title || d.title_suggest || 'Untitled',
+        authors: (d.author_name || []),
+        description: (d.subject && d.subject.join(', ')) || d.first_sentence || '',
+        cover,
+        infoLink: d.key ? `https://openlibrary.org${d.key}` : null,
+        publishedDate: d.first_publish_year || null,
+        averageRating: 0,
+        categories: d.subject || []
+      };
+    }).filter(b => !!b.cover);
+  } catch (e) {
+    return [];
+  }
 }
 
 // Mood -> query keywords mapping
@@ -182,12 +210,69 @@ router.get('/discover', async (req, res) => {
     const genrePart = genre ? `subject:${genre}` : '';
     const parts = [moodPart, genrePart].filter(Boolean);
     const q = parts.length ? parts.join(' ') : 'bestsellers';
-    const key = `discover:${mood}:${genre}:${lim}`;
+    const key = `discover_ai:${mood}:${genre}:${lim}`;
     const c = getCached(key); if(c) return res.json(c);
-    const pool = await fetchMany(q, Math.max(lim*3, 120));
-    const cleaned = pool.map(cleanItem).filter(Boolean).slice(0, lim);
-    setCached(key, cleaned);
-    res.json(cleaned);
+
+    // Fetch candidates from Google Books and Open Library in parallel
+    const googlePromise = fetchMany(q, Math.max(lim*3, 120));
+    const openLibPromise = fetchOpenLibrarySearch(`${mood} ${genre}`.trim(), Math.max(lim*2, 80));
+    const [googlePool, openLibBooks] = await Promise.all([googlePromise, openLibPromise]);
+
+    const candidates = [];
+    // Clean Google items
+    for (const it of (googlePool || [])) {
+      const citem = cleanItem(it);
+      if (citem) candidates.push(citem);
+    }
+    // Add Open Library items (already cleaned by fetchOpenLibrarySearch)
+    for (const ob of (openLibBooks || [])) {
+      // attempt to filter adult keywords similarly
+      const text = (ob.title + ' ' + (ob.description||'') + ' ' + (ob.categories||[]).join(' ')).toLowerCase();
+      const adultKeywords = ['erotica','adult','explicit','18+','nsfw','sex','porn','xxx','mature','smut','r18','bdsm','fetish','taboo','incest','hentai'];
+      if (adultKeywords.some(k => text.includes(k))) continue;
+      candidates.push(ob);
+    }
+
+    // Deduplicate by title+authors
+    const seen = new Set();
+    const unique = [];
+    for (const it of candidates) {
+      const keyId = (it.title + '|' + (it.authors?.join(',')||'')).toLowerCase();
+      if (seen.has(keyId)) continue;
+      seen.add(keyId);
+      unique.push(it);
+    }
+
+    // Scoring: relevance to mood/genre, rating, and recency
+    const moodTerms = (moodPart || mood || '').toLowerCase().split(/\s+|OR/).filter(Boolean);
+    const genreTerm = (genre || '').toLowerCase();
+    const nowYear = new Date().getFullYear();
+
+    function scoreItem(it){
+      let score = 0;
+      const text = ((it.title||'') + ' ' + (it.description||'') + ' ' + (it.categories||[]).join(' ') + ' ' + (it.authors||[]).join(' ')).toLowerCase();
+      // mood term matches
+      for (const t of moodTerms){ if (!t) continue; if (text.includes(t)) score += 4; }
+      // genre match
+      if (genreTerm && ((it.categories||[]).join(' ').toLowerCase().includes(genreTerm) || (it.title||'').toLowerCase().includes(genreTerm))) score += 3;
+      // rating boost
+      score += (it.averageRating || 0) * 1.5;
+      // recency: newer books get a small boost
+      if (it.publishedDate){
+        const year = parseInt((it.publishedDate||'').toString().slice(0,4),10);
+        if (!Number.isNaN(year)){
+          const age = Math.max(0, nowYear - year);
+          score += Math.max(0, 3 - (age / 5)); // recent books within ~15 years get diminishing boost
+        }
+      }
+      // slight length penalty for very short descriptions (prefer richer metadata)
+      if ((it.description||'').length > 200) score += 1;
+      return score;
+    }
+
+    const scored = unique.map(it => ({...it, _score: scoreItem(it)})).sort((a,b)=>b._score - a._score).slice(0, lim);
+    setCached(key, scored);
+    res.json(scored);
   } catch (e) {
     console.error('discover error', e);
     res.status(500).json({ error: 'Failed to discover' });

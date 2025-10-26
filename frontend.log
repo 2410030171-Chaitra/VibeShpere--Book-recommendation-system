@@ -3,213 +3,224 @@
 > vite --host 0.0.0.0
 
 
-  VITE v5.4.20  ready in 179 ms
+  VITE v5.4.20  ready in 160 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://192.168.0.100:5173/
-1:00:33 AM [vite] hmr update /src/components/RecentlyViewed.jsx, /src/index.css
-1:00:33 AM [vite] Internal server error: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx: Missing semicolon. (121:13)
-
-  119 |                 </div>
-  120 |               </div>
-> 121 |             ))}
-      |              ^
-  122 |           </div>
-  123 |         </div>
-  124 |       )}
-  Plugin: vite:react-babel
-  File: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx:121:13
-  119|                  </div>
-  120|                </div>
-  121|              ))}
-     |               ^
-  122|            </div>
-  123|          </div>
-      at constructor (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6630:19)
-      at JSXParserMixin.semicolon (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6926:10)
-      at JSXParserMixin.parseReturnStatement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13152:12)
-      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12807:21)
-      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
-      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
-      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
-      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
-      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
-      at JSXParserMixin.parseArrowExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12085:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11695:12)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11335:23)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4797:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12503:17)
-      at JSXParserMixin.parseExprListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12185:18)
-      at JSXParserMixin.parseCallExpressionArguments (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11256:22)
-      at JSXParserMixin.parseCoverCallAndAsyncArrowHead (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11190:29)
-      at JSXParserMixin.parseSubscript (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11124:19)
-      at JSXParserMixin.parseSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11098:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11089:17)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at JSXParserMixin.parseExpressionBase (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10788:23)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:17)
-      at JSXParserMixin.jsxParseExpressionContainer (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4665:31)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4744:36)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4731:32)
-      at JSXParserMixin.jsxParseElement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4782:17)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4792:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-1:00:33 AM [vite] Internal server error: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx: Missing semicolon. (121:13)
-
-  119 |                 </div>
-  120 |               </div>
-> 121 |             ))}
-      |              ^
-  122 |           </div>
-  123 |         </div>
-  124 |       )}
-  Plugin: vite:react-babel
-  File: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx:121:13
-  119|                  </div>
-  120|                </div>
-  121|              ))}
-     |               ^
-  122|            </div>
-  123|          </div>
-      at constructor (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6630:19)
-      at JSXParserMixin.semicolon (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6926:10)
-      at JSXParserMixin.parseReturnStatement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13152:12)
-      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12807:21)
-      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
-      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
-      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
-      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
-      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
-      at JSXParserMixin.parseArrowExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12085:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11695:12)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11335:23)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4797:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12503:17)
-      at JSXParserMixin.parseExprListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12185:18)
-      at JSXParserMixin.parseCallExpressionArguments (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11256:22)
-      at JSXParserMixin.parseCoverCallAndAsyncArrowHead (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11190:29)
-      at JSXParserMixin.parseSubscript (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11124:19)
-      at JSXParserMixin.parseSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11098:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11089:17)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at JSXParserMixin.parseExpressionBase (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10788:23)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:17)
-      at JSXParserMixin.jsxParseExpressionContainer (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4665:31)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4744:36)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4731:32)
-      at JSXParserMixin.jsxParseElement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4782:17)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4792:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-1:00:33 AM [vite] Internal server error: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx: Missing semicolon. (121:13)
-
-  119 |                 </div>
-  120 |               </div>
-> 121 |             ))}
-      |              ^
-  122 |           </div>
-  123 |         </div>
-  124 |       )}
-  Plugin: vite:react-babel
-  File: /Users/devarshettypravalika/Desktop/fedf project/src/components/RecentlyViewed.jsx:121:13
-  119|                  </div>
-  120|                </div>
-  121|              ))}
-     |               ^
-  122|            </div>
-  123|          </div>
-      at constructor (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6630:19)
-      at JSXParserMixin.semicolon (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:6926:10)
-      at JSXParserMixin.parseReturnStatement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13152:12)
-      at JSXParserMixin.parseStatementContent (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12807:21)
-      at JSXParserMixin.parseStatementLike (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12776:17)
-      at JSXParserMixin.parseStatementListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12756:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13325:61)
-      at JSXParserMixin.parseBlockBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13318:10)
-      at JSXParserMixin.parseBlock (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:13306:10)
-      at JSXParserMixin.parseFunctionBody (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12110:24)
-      at JSXParserMixin.parseArrowExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12085:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11695:12)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11335:23)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4797:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10804:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12503:17)
-      at JSXParserMixin.parseExprListItem (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12185:18)
-      at JSXParserMixin.parseCallExpressionArguments (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11256:22)
-      at JSXParserMixin.parseCoverCallAndAsyncArrowHead (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11190:29)
-      at JSXParserMixin.parseSubscript (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11124:19)
-      at JSXParserMixin.parseSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11098:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11089:17)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10903:61)
-      at JSXParserMixin.parseExprOps (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10908:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10885:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10835:21)
-      at JSXParserMixin.parseExpressionBase (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10788:23)
-      at /Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:39
-      at JSXParserMixin.allowInAnd (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:12436:12)
-      at JSXParserMixin.parseExpression (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:10784:17)
-      at JSXParserMixin.jsxParseExpressionContainer (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4665:31)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4744:36)
-      at JSXParserMixin.jsxParseElementAt (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4731:32)
-      at JSXParserMixin.jsxParseElement (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4782:17)
-      at JSXParserMixin.parseExprAtom (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:4792:19)
-      at JSXParserMixin.parseExprSubscripts (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11085:23)
-      at JSXParserMixin.parseUpdate (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11070:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/devarshettypravalika/Desktop/fedf project/node_modules/@babel/parser/lib/index.js:11050:23)
-1:00:49 AM [vite] hmr update /src/components/RecentlyViewed.jsx, /src/index.css
-1:00:59 AM [vite] hmr update /src/components/RecentlyViewed.jsx, /src/index.css
-1:01:16 AM [vite] hmr update /App.jsx, /src/index.css
-1:01:27 AM [vite] hmr update /App.jsx, /src/index.css
+5:35:32 PM [vite] hmr update /App.jsx, /src/index.css
+5:35:40 PM [vite] hmr update /App.jsx, /src/index.css
+5:35:44 PM [vite] hmr update /App.jsx, /src/index.css
+5:37:06 PM [vite] hmr update /App.jsx, /src/index.css
+5:37:12 PM [vite] hmr update /App.jsx, /src/index.css
+5:37:12 PM [vite] hmr update /App.jsx, /src/index.css
+5:39:00 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:39:04 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:39:13 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:43:19 PM [vite] hmr update /App.jsx, /src/index.css
+5:43:27 PM [vite] hmr update /App.jsx, /src/index.css
+5:47:28 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:47:28 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:47:28 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:47:28 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:47:29 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:48:07 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:48:07 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:07 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:07 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:48:07 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:48:11 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:48:11 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:11 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:48:11 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:11 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:48:22 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:48:22 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:22 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:48:22 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:22 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:48:24 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:48:24 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:24 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:48:24 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:48:24 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:49:43 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:49:43 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:49:43 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:49:43 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:49:43 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:49:59 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:49:59 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:49:59 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+5:49:59 PM [vite] Pre-transform error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+5:49:59 PM [vite] Internal server error: Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+  Plugin: vite:import-analysis
+  File: /Users/devarshettypravalika/Desktop/fedf project/src/services/googleBooks.js:1:1
+  1  |  const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
+     |  ^
+  2  |  
+  3  |  // Simple in-memory cache to speed up repeated queries during a dev session.
+      at TransformPluginContext._formatError (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41)
+      at TransformPluginContext.error (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16)
+      at TransformPluginContext.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64258:14)
+      at async PluginContainer.transform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18)
+      at async loadAndTransform (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27)
+      at async viteTransformMiddleware (file:///Users/devarshettypravalika/Desktop/fedf%20project/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:62105:24)
+5:50:58 PM [vite] hmr update /App.jsx, /src/index.css, /src/components/GoogleBooksGallery.jsx
+5:51:29 PM [vite] hmr update /App.jsx, /src/index.css
+5:51:33 PM [vite] hmr update /App.jsx, /src/index.css
+5:51:41 PM [vite] hmr update /App.jsx, /src/index.css
+5:52:17 PM [vite] hmr update /App.jsx, /src/index.css
+5:52:40 PM [vite] hmr update /App.jsx, /src/index.css
+5:52:44 PM [vite] hmr update /App.jsx, /src/index.css
+5:57:08 PM [vite] page reload src/components/MoodSelector.jsx
+5:57:16 PM [vite] page reload src/components/MoodSelector.jsx
+5:58:01 PM [vite] page reload src/components/MoodSelector.jsx

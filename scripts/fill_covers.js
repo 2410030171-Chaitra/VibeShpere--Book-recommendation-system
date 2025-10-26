@@ -49,7 +49,6 @@ async function fetchGoogleThumb(title, author) {
   const replaced = [];
 
   while ((match = bookRegex.exec(src)) !== null) {
-    const fullMatch = match[1];
     const id = match[2];
     const title = match[3];
     const author = match[4];

@@ -1,7 +1,18 @@
 {
-  "css.validate": false,
-  "less.validate": false,
-  "scss.validate": false,
   "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+
+  "css.validate": true,
+  "scss.validate": true,
+  "less.validate": true,
+
+  "tailwindCSS.includeLanguages": {
+    "html": "html",
+    "javascript": "javascript",
+    "javascriptreact": "javascript",
+    "typescriptreact": "typescript"
+  },
+
   "tailwindCSS.emmetCompletions": true
 }

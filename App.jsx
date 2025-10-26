@@ -1,13 +1,313 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import GoogleBooksGallery from "./src/components/GoogleBooksGallery.jsx";
-import DiscoverPage from "./src/components/DiscoverPage.jsx";
-import GoogleSignInButton from "./src/components/GoogleSignInButton.jsx";
-import { signInWithGoogle, onAuthChange, logOut as firebaseLogOut } from "./src/services/firebaseAuth.js";
-import fetchBooks, { fetchBooksMany } from "./src/services/googleBooks.js";
-import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
-import { getTrendingBooks } from "./src/services/recommendations.js";
+import fetchBooks, { fetchBooksMany, isBlocked } from "./src/services/googleBooks.js";
 import apiService from "./src/services/api.js";
-import BookImage from "./src/components/BookImage.jsx";
+import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
+
+// Generate a simple SVG data-URL placeholder using the book title/author so
+// each book has a unique fallback image when the remote cover fails.
+function escapeSvgText(s = '') {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Reusable cover image component that proactively verifies the provided src,
+// attempts a Google Books thumbnail lookup if the src fails, and finally
+// falls back to a unique SVG placeholder.
+function CoverImage({ src, title, author, className, alt, style, loading = 'lazy' }) {
+  const [coverSrc, setCoverSrc] = React.useState(src ? svgPlaceholder(title, author) : svgPlaceholder(title, author));
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
+  // Proactively validate the provided src using a temporary Image() so we can
+  // show the SVG placeholder immediately and only swap to the remote image
+  // once we've verified it loads successfully. This avoids rendering a
+  // broken image tag in the DOM and gives us a chance to attempt Google Books
+  // lookup before settling on the placeholder.
+  React.useEffect(() => {
+    let cancelled = false;
+    let timer = null;
+
+    async function setPlaceholder() {
+      if (!isMounted.current) return;
+      setCoverSrc(svgPlaceholder(title, author));
+    }
+
+    // If no src provided, immediately show placeholder
+    if (!src) {
+      setPlaceholder();
+      return () => { cancelled = true; if (timer) clearTimeout(timer); };
+    }
+
+    // Start by showing the placeholder while we validate the url.
+    setCoverSrc(svgPlaceholder(title, author));
+
+    const img = new Image();
+    // Avoid tainting canvas; we don't need crossOrigin for load detection, but set it if server allows
+    try { img.crossOrigin = 'anonymous'; } catch (e) {}
+
+    const timeoutMs = 8000;
+    let timedOut = false;
+
+    const onLoad = async () => {
+      if (cancelled || !isMounted.current) return;
+      if (img.naturalWidth && img.naturalWidth < 120) {
+        // low-res; try Google Books for a better image
+        const g = await fetchGoogleThumbnail(title, author);
+        if (g && isMounted.current && !cancelled) {
+          setCoverSrc(g);
+          return;
+        }
+      }
+      if (isMounted.current && !cancelled) setCoverSrc(src);
+    };
+
+    const onError = async () => {
+      if (cancelled || !isMounted.current) return;
+      // Try Google Books before using placeholder
+      try {
+        const g = await fetchGoogleThumbnail(title, author);
+        if (g && isMounted.current && !cancelled) {
+          setCoverSrc(g);
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
+      if (isMounted.current && !cancelled) setCoverSrc(svgPlaceholder(title, author));
+    };
+
+    img.onload = onLoad;
+    img.onerror = onError;
+    // Start timeout to fail fast
+    timer = setTimeout(() => {
+      timedOut = true;
+      // if timed out, treat as error
+      onError();
+    }, timeoutMs);
+
+    // Kick off load (use https if possible)
+    const startUrl = src.replace(/^http:/, 'https:');
+    img.src = startUrl;
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+      if (timer) clearTimeout(timer);
+    };
+  }, [src, title, author]);
+
+  // Keep the DOM <img> as a final safety net (onError/onLoad) for cases where
+  // the browser reports success but the resource later fails; reuse existing
+  // Google Books fallback on error.
+  async function handleImgError(e) {
+    try {
+      e.currentTarget.onerror = null; // prevent loops
+      const g = await fetchGoogleThumbnail(title, author);
+      if (g) {
+        e.currentTarget.src = g;
+        return;
+      }
+    } catch (err) {
+      // ignore
+    }
+    e.currentTarget.src = svgPlaceholder(title, author);
+  }
+
+  return (
+    <img
+      src={coverSrc}
+      alt={alt || title}
+      className={className}
+      style={style}
+      loading={loading}
+      onError={handleImgError}
+      onLoad={async (ev) => {
+        try {
+          const imgEl = ev.currentTarget;
+          if (imgEl.naturalWidth && imgEl.naturalWidth < 120) {
+            const g2 = await fetchGoogleThumbnail(title, author);
+            if (g2 && g2 !== imgEl.src) imgEl.src = g2;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }}
+    />
+  );
+}
+
+function stringToColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = str.charCodeAt(i) + ((h << 5) - h);
+    h = h & h;
+  }
+  const hue = Math.abs(h) % 360;
+  return `hsl(${hue} 70% 90%)`;
+}
+
+function svgPlaceholder(title = '', subtitle = '') {
+  const bg = stringToColor(title + subtitle);
+  const t = escapeSvgText(title || '');
+  const s = escapeSvgText(subtitle || '');
+  const svg = `
+  <svg xmlns='http://www.w3.org/2000/svg' width='1' height='1' viewBox='0 0 1 1' preserveAspectRatio='none'>
+    <rect width='1' height='1' fill='${bg}' />
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+// Try to fetch a thumbnail from Google Books for a given title/author. Returns thumbnail URL or null.
+async function fetchGoogleThumbnail(title = '', author = '') {
+  try {
+    // Use the centralized fetchBooks helper which already filters out mature/adult
+    // content. This ensures any thumbnail lookup also respects the global
+    // adult-content heuristics.
+    const q = `intitle:${title}` + (author ? `+inauthor:${author}` : '');
+    const results = await fetchBooks(q, 0, 1);
+    if (!results || results.length === 0) return null;
+    const item = results[0];
+    const info = item && item.volumeInfo;
+    const thumb = info && (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
+    return thumb ? thumb.replace(/^http:\/\//, 'https://') : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Shared handler used when an img fails to load. It will attempt Google Books lookup,
+// then fallback to an SVG placeholder.
+function handleImageErrorFactory(title, author) {
+  return async function onImgError(e) {
+    try {
+      // prevent loops
+      e.currentTarget.onerror = null;
+      const g = await fetchGoogleThumbnail(title, author);
+      if (g) {
+        e.currentTarget.src = g;
+        return;
+      }
+    } catch (err) {
+      // ignore
+    }
+    e.currentTarget.src = svgPlaceholder(title, author);
+  };
+}
+
+// Helper: prefer ISBN_13 then ISBN_10 for Open Library covers
+function getBestIsbn(info) {
+  const ids = info?.industryIdentifiers || [];
+  const isbn13 = ids.find((x) => x.type === 'ISBN_13')?.identifier;
+  const isbn10 = ids.find((x) => x.type === 'ISBN_10')?.identifier;
+  return isbn13 || isbn10 || null;
+}
+
+// Helper: build an Open Library cover URL that does NOT fall back to placeholder
+function openLibCoverUrl(isbn) {
+  if (!isbn) return null;
+  return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+}
+
+// Home tile for Google Books items: STRICT cover validation - only show books with valid Google Books thumbnails
+function GoogleBookTile({ item, userDataManager }) {
+  const info = item.volumeInfo || {};
+  const title = info.title || 'Untitled';
+  const authors = (info.authors || []).join(', ');
+  const googleThumbRaw = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
+  const googleThumb = googleThumbRaw ? googleThumbRaw.replace(/^http:/, 'https:') : null;
+  // Hide any runtime-blocked titles (centralized blacklist)
+  try {
+    if (isBlocked && isBlocked(item)) return null;
+  } catch (e) {
+    // ignore if helper not available
+  }
+  
+  // STRICT: If there's no Google Books thumbnail, don't render the tile at all
+  if (!googleThumb) {
+    return null;
+  }
+
+  const [visible, setVisible] = React.useState(true);
+
+  if (!visible) return null;
+
+  return (
+    <div className="w-60 flex-shrink-0">
+      <div className="book-tile">
+        <article className="book-card">
+          <div className="book-cover-wrap">
+            <img
+              className="book-cover book-cover--strict"
+              src={googleThumb}
+              alt={`${title} cover`}
+              onError={() => {
+                // If image fails to load, hide the entire tile
+                setVisible(false);
+              }}
+            />
+          </div>
+          <div className="book-info">
+            <h4 className="book-title">{title}</h4>
+            <p className="book-authors">{authors}</p>
+            <div className="mt-auto flex items-center gap-2">
+              <a
+                className="view-link"
+                href={info.infoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => {
+                  // Record in history before opening link
+                  if (userDataManager) {
+                    const entry = {
+                      id: item.id,
+                      title,
+                      authors,
+                      cover: googleThumb,
+                      infoLink: info.infoLink
+                    };
+                    const cur = userDataManager.getData('history', []) || [];
+                    const next = [entry, ...cur.filter(h => h.id !== item.id)].slice(0, 24);
+                    userDataManager.saveData('history', next);
+                  } else {
+                    const entry = {
+                      id: item.id,
+                      title,
+                      authors,
+                      cover: googleThumb,
+                      infoLink: info.infoLink
+                    };
+                    const raw = localStorage.getItem('vibesphere_guest_history');
+                    const cur = raw ? JSON.parse(raw) : [];
+                    const next = [entry, ...cur.filter(h => h.id !== item.id)].slice(0, 24);
+                    localStorage.setItem('vibesphere_guest_history', JSON.stringify(next));
+                  }
+                  window.dispatchEvent(new CustomEvent('historyUpdated'));
+                }}
+              >
+                View
+              </a>
+              {userDataManager && (
+                <button
+                  className="px-2 py-1 text-pink-600"
+                  onClick={() => {
+                    toggleFavorite(userDataManager, { id: item.id, title, authors, cover: googleThumb });
+                  }}
+                >
+                  {userDataManager.getData('favorites', []).find(b => b.id === item.id) ? '💖' : '🤍'}
+                </button>
+              )}
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  );
+}
 
 /**
  * VibeSphere — A serene, modern book recommendation website
@@ -130,22 +430,6 @@ const BOOKS = [
       { user: "ComedyReader", rating: 4, comment: "Witty dialogue and relatable characters." }
     ]
   },
-  {
-    id: "b8",
-    title: "Mist Over Nilgiris",
-    author: "Latha Iyer",
-    genres: ["Mystery", "Drama", "Fiction"],
-    tags: ["mountains", "family", "secrets"],
-    lengthHours: 6,
-    summary: "A botanist returns home to unravel the truth behind a long-guarded disappearance.",
-  cover: "https://images.unsplash.com/photo-1520637836862-4d197d17c89a?q=80&w=600&auto=format&fit=crop",
-    rating: 4.3,
-    reviews: [
-      { user: "MysteryLover", rating: 4, comment: "Atmospheric and suspenseful with beautiful descriptions." },
-      { user: "NatureLover", rating: 5, comment: "Love the botanical elements woven into the mystery." }
-    ]
-  },
-  // Non-Fiction Books
   {
     id: "b9",
     title: "The Art of Mindful Living",
@@ -566,49 +850,6 @@ function Auth({ onAuth }) {
               {tab === "login" ? "🚀 Sign In" : "✨ Create Account"}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-slate-500 font-medium">Or continue with</span>
-            </div>
-          </div>
-
-          {/* Google Sign-In Button */}
-          <GoogleSignInButton
-            onSuccess={(userData) => {
-              // Create user object from Google data
-              const user = {
-                id: "u_google_" + userData.uid,
-                name: userData.displayName || userData.email.split("@")[0],
-                email: userData.email,
-                photoURL: userData.photoURL,
-                favoriteGenres: ["Mystery", "Romance"],
-                historyTags: ["witty", "twist"],
-                timeBudgetHours: 6,
-              };
-              
-              // Initialize user-specific ratings if they don't exist
-              const existingUserRatings = loadLS(`vibesphere_ratings_${user.id}`, null);
-              if (!existingUserRatings) {
-                saveLS(`vibesphere_ratings_${user.id}`, {});
-              }
-              
-              onAuth(user);
-            }}
-            onError={(error) => {
-              console.error("Google sign-in failed:", error);
-              alert("Failed to sign in with Google. Please try again.");
-            }}
-          />
-
-          {/* Privacy note */}
-          <p className="text-center text-xs text-slate-500 mt-6">
-            By signing in, you agree to our Terms of Service and Privacy Policy
-          </p>
         </div>
       </div>
   </div>
@@ -620,7 +861,7 @@ function Auth({ onAuth }) {
 // -----------------------------
 function TopNav({ user, onRoute, route, onLogout, theme, onToggleTheme }) {
   return (
-    <header className="sticky top-0 z-20 glass-card border-b border-white/20 shadow-lg">
+  <header className="sticky top-0 z-20 glass-card border-b border-white/10 shadow-lg" style={{background: 'var(--card)'}}>
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -634,7 +875,6 @@ function TopNav({ user, onRoute, route, onLogout, theme, onToggleTheme }) {
   <nav className="ml-auto flex items-center gap-2">
           {[
             ["dashboard", "🏠 Home"],
-            ["discover", "✨ Discover"],
             ["explore", "🔎 Explore"],
             ["favorites", "💖 Favorites"],
             ["library", "📚 Library"],
@@ -646,8 +886,11 @@ function TopNav({ user, onRoute, route, onLogout, theme, onToggleTheme }) {
                 "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105",
                 route === r 
                   ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg" 
-                  : "hover:bg-white/50 text-slate-700"
+                  : (theme === 'night' 
+                      ? "text-[var(--title)]/90 hover:bg-white/10" 
+                      : "text-slate-700 hover:bg-white/50")
               )}
+              style={route === r ? undefined : (theme === 'night' ? { color: 'var(--title)' } : undefined)}
               onClick={() => onRoute(r)}
             >
               {label}
@@ -785,16 +1028,21 @@ function Hero({ user, onTimeBudget }) {
 function BookCard({ book, onAdd, onWhy }) {
   const [showWhy, setShowWhy] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  // If no cover URL, or if image has failed, do not render.
+  if (!book.cover || !isVisible) {
+    return null;
+  }
   
   return (
     <article className="book-card group animate-fade-in" style={{width: '100%', height: '320px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column'}}>
       <div className="relative overflow-hidden flex-shrink-0" style={{height: '140px'}}>
-        <BookImage
-          primaryUrl={book.cover}
-          altIdentifiers={{ isbn: book.isbn }}
-          title={book.title}
-          author={book.author}
-          className="book-cover img-contain group-hover:scale-110 transition-transform duration-500"
+        <img
+          src={book.cover}
+          alt={book.title}
+          className="book-cover group-hover:scale-110 transition-transform duration-500"
+          onError={() => setIsVisible(false)}
           loading="lazy"
           style={{width: '100%', height: '100%', objectFit: 'cover'}}
         />
@@ -901,134 +1149,135 @@ function Carousel({ children }) {
 function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
   const [topPicks, setTopPicks] = useState([]);
   const [personalized, setPersonalized] = useState({});
-  const [favoritesList, setFavoritesList] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [loadingHome, setLoadingHome] = useState(false);
 
-  // Helper to record book to history
-  const recordHistory = (item) => {
-    try {
-      const info = item.volumeInfo || {};
-      const title = info.title || 'Untitled';
-      const authors = (info.authors || []).join(', ');
-      const images = info.imageLinks || {};
-      const thumb = images.thumbnail || images.smallThumbnail || images.medium || images.large || null;
-      const isbn = (info.industryIdentifiers && info.industryIdentifiers[0]?.identifier) || '';
-      
-      const entry = {
-        id: item.id,
-        title,
-        authors,
-        cover: thumb ? thumb.replace(/^http:/, 'https:') : null,
-        thumbnail: thumb ? thumb.replace(/^http:/, 'https:') : null,
-        isbn: isbn.replace(/[^0-9X]/gi, ''),
-        infoLink: info.infoLink
-      };
-      
-      console.log('📝 Recording history:', entry);
-      
-      if (userDataManager) {
-        const cur = userDataManager.getData('history', []) || [];
-        const next = [entry, ...cur.filter((h) => h.id !== item.id)].slice(0, 24);
-        userDataManager.saveData('history', next);
-      } else {
-        const raw = localStorage.getItem('vibesphere_guest_history');
-        const cur = raw ? JSON.parse(raw) : [];
-        const next = [entry, ...cur.filter((h) => h.id !== item.id)].slice(0, 24);
-        localStorage.setItem('vibesphere_guest_history', JSON.stringify(next));
-      }
-      // Dispatch custom event so RecentlyViewed component updates immediately
-      window.dispatchEvent(new CustomEvent('historyUpdated'));
-    } catch (e) {
-      console.error('Failed to record history:', e);
-    }
-  };
-
-  // load favorites when userDataManager changes
+  // Load recently viewed books from history
   useEffect(() => {
-    if (userDataManager) {
-      const fav = userDataManager.getData('favorites', []);
-      setFavoritesList(fav || []);
-    } else {
-      setFavoritesList([]);
+    function loadHistory() {
+      try {
+        if (userDataManager) {
+          const history = userDataManager.getData('history', []) || [];
+          setRecentlyViewed(history.slice(0, 12));
+        } else {
+          const raw = localStorage.getItem('vibesphere_guest_history');
+          const history = raw ? JSON.parse(raw) : [];
+          setRecentlyViewed(history.slice(0, 12));
+        }
+      } catch (e) {
+        setRecentlyViewed([]);
+      }
     }
+    
+    loadHistory();
+    // Listen for history updates from Discover page
+    window.addEventListener('historyUpdated', loadHistory);
+    return () => window.removeEventListener('historyUpdated', loadHistory);
   }, [userDataManager, user]);
-
-  function handleToggleFavorite(book) {
-    if (!userDataManager) return;
-    const updated = toggleFavorite(userDataManager, book);
-    setFavoritesList(updated || []);
-  }
 
   // Fetch Top Picks and personalized rows from Google Books when user changes
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const tops = await fetchBooks('bestsellers', 12);
+        setLoadingHome(true);
+        
+        // Helper: collect items with STRICT cover validation (must have valid thumbnail)
+        const collectValid = async (query, target = 20) => {
+          const pool = await fetchBooksMany(query, 200);
+          const picked = [];
+          for (const item of (pool || [])) {
+            const info = item.volumeInfo || {};
+            // STRICT: Must have a valid Google Books thumbnail
+            const hasGoogleThumb = !!(info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
+            if (!hasGoogleThumb) continue; // Skip if no cover
+            // Filter out adult / 18+ content by checking title/description/categories
+            const adultKeywords = [
+              'erotica','adult','explicit','18+','nsfw','sex','sexual','porn','xxx','mature','smut','r18','r-18','bdsm','fetish','taboo','incest','hentai','yaoi','yuri'
+            ];
+            const text = [info.title, info.subtitle, info.description, ...(info.categories||[])]
+              .filter(Boolean).join(' ').toLowerCase();
+            // Skip if Google reports maturityRating === 'MATURE'
+            if (info.maturityRating && String(info.maturityRating).toUpperCase() === 'MATURE') continue;
+            if (adultKeywords.some(k => text.includes(k))) continue;
+            picked.push(item);
+            if (picked.length >= target) break;
+          }
+          return picked;
+        };
+
+        const dedupeById = (arr) => {
+          const seen = new Set();
+          const out = [];
+          for (const it of arr) {
+            if (!it || !it.id || seen.has(it.id)) continue;
+            seen.add(it.id);
+            out.push(it);
+          }
+          return out;
+        };
+
+        const backfill = async (items, target, excludeIds = new Set(), fallbacks = []) => {
+          let result = [...items];
+          const have = new Set([...excludeIds, ...result.map((x) => x.id)]);
+          for (const q of fallbacks) {
+            if (result.length >= target) break;
+            const more = await collectValid(q, target * 2);
+            for (const it of more) {
+              if (result.length >= target) break;
+              if (have.has(it.id)) continue;
+              have.add(it.id);
+              result.push(it);
+            }
+          }
+          return dedupeById(result).slice(0, target);
+        };
+
+        // Fetch Top Picks (trending/bestsellers) - 20 books with excellent covers
+        let tops = await collectValid('bestsellers 2024 OR trending books OR popular fiction OR award winning', 20);
+        if (tops.length < 20) {
+          tops = await backfill(
+            tops,
+            20,
+            new Set(tops.map((t) => t.id)),
+            ['subject:fiction bestseller', 'classics popular', 'subject:mystery thriller', 'subject:romance bestseller']
+          );
+        }
         if (!mounted) return;
         setTopPicks(tops || []);
 
-        const genres = (user?.favoriteGenres || []).slice(0, 4);
-        const tags = (user?.historyTags || []).slice(0, 6);
+        // Fetch personalized rows based on user's favorite genres - STRICT cover validation
+        const genres = (user?.favoriteGenres || ['Fiction', 'Mystery', 'Romance']).slice(0, 3);
         const per = {};
 
         await Promise.all(
           genres.map(async (g) => {
-            const items = await fetchBooks(`subject:${g}`, 10);
+            let items = await collectValid(`subject:${g} bestseller popular`, 15);
+            if (items.length < 15) {
+              items = await backfill(
+                items,
+                15,
+                new Set(items.map((x) => x.id)),
+                [`subject:${g}`, 'bestsellers', 'popular fiction']
+              );
+            }
             if (!mounted) return;
             per[g] = items || [];
           })
         );
 
-        if (tags.length && mounted) {
-          const tagQ = tags.join(' OR ');
-          const tagItems = await fetchBooks(tagQ, 12);
-          per['Because you explored'] = tagItems || [];
-        }
-
-        // If no personalized items were fetched from Google (rate limits, no matches),
-        // fall back to local BOOKS filtered by the user's favorite genres so the
-        // Home page still feels personalized.
         if (mounted) {
-          if (Object.keys(per).length === 0 && genres.length > 0) {
-            // build local per-genre rows
-            const localPer = {};
-            for (const g of genres) {
-              const items = BOOKS.filter((b) => (b.genres || []).includes(g)).slice(0, 10);
-              if (items.length) localPer[g] = items;
-            }
-            // If we still have nothing, leave per as empty; otherwise use localPer
-            setPersonalized(Object.keys(localPer).length ? localPer : per);
-          } else {
-            setPersonalized(per);
-          }
+          setPersonalized(per);
         }
       } catch (e) {
         console.error('Failed loading Google categories', e);
+      } finally {
+        if (mounted) setLoadingHome(false);
       }
     }
     load();
     return () => { mounted = false };
   }, [user]);
-
-  
-
-  function addToLibrary(book) {
-    if (!userDataManager) return;
-    
-    const library = userDataManager.getData('library', []);
-    if (!library.find((x) => x.id === book.id)) {
-      library.push({ ...book, progress: 0 });
-      userDataManager.saveData('library', library);
-    }
-    
-    // Record tag history for content-based personalization
-    const updatedUser = {
-      ...user,
-      historyTags: Array.from(new Set([...(user.historyTags || []), ...book.tags])).slice(-15),
-    };
-    setUser(updatedUser);
-    saveLS("vibesphere_user", updatedUser);
-  }
 
   return (
     <main className="pb-16">
@@ -1044,195 +1293,117 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
       <section className="max-w-6xl mx-auto px-4 space-y-8">
         
         {/* Recently Viewed Section */}
-        <RecentlyViewed userDataManager={userDataManager} />
-        
-        {/* Top Picks (Google Books) */}
-        <div className="modern-card p-6 bg-pink-50">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-pink-700 mb-1">� Top Picks</h3>
-              <p className="text-sm text-pink-600">Popular picks from Google Books</p>
-            </div>
-            <div className="px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-medium">Trending</div>
-          </div>
-          <div className="overflow-x-auto -mx-3 py-2">
-            <div className="flex gap-4 px-3">
-                {topPicks.map((item) => {
-                const info = item.volumeInfo || {};
-                const title = info.title || 'Untitled';
-                const authors = (info.authors || []).join(', ');
-                const thumb = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
-                return (
-                  <div key={item.id} className="w-56 flex-shrink-0">
-                    <div className="book-tile">
-                      <article className="book-card">
-                      <div className="book-cover-wrap">
-                            {thumb ? <BookImage className="book-cover img-contain" primaryUrl={thumb.replace(/^http:/,'https:')} title={title} author={authors} /> : <div className="skeleton book-cover" />}
-                      </div>
-                      <div className="book-info">
-                        <h4 className="book-title">{title}</h4>
-                        <p className="book-authors">{authors}</p>
-                        <div className="mt-auto flex items-center gap-2">
-                          <a className="view-link" href={info.infoLink} target="_blank" rel="noopener noreferrer" onClick={() => recordHistory(item)}>View</a>
-                          {userDataManager && (
-                            <button className="px-2 py-1 text-pink-600" onClick={() => {
-                              const updated = toggleFavorite(userDataManager, { id: item.id, title, authors, cover: thumb });
-                              // no setState here (UserDataManager persists), but you could set local state if needed
-                            }}>{(userDataManager.getData('favorites', []).find(b=>b.id===item.id) ? '💖' : '🤍')}</button>
-                          )}
-                        </div>
-                      </div>
-                      </article>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-            {/* Favorites (per-user) */}
-            {favoritesList && favoritesList.length > 0 && (
-              <div className="modern-card p-6 bg-pink-50">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-2xl font-bold text-pink-700 mb-1">💖 Your Favorites</h3>
-                    <p className="text-sm text-pink-600">Books you saved</p>
-                  </div>
-                </div>
-                <div className="overflow-x-auto -mx-3 py-2">
-                  <div className="flex gap-4 px-3">
-                    {favoritesList.map((b) => (
-                      <div key={b.id} className="w-56 flex-shrink-0">
-                        <div className="book-tile">
-                          <article className="book-card">
-                          <div className="book-cover-wrap">
-                            {b.cover ? <BookImage className="book-cover img-contain" primaryUrl={b.cover.replace(/^http:/,'https:')} title={b.title} author={b.authors || b.author} /> : <div className="skeleton book-cover" />}
-                          </div>
-                          <div className="book-info">
-                            <h4 className="book-title">{b.title}</h4>
-                            <p className="book-authors">{b.authors}</p>
-                            <div className="mt-auto flex items-center gap-2">
-                              <a className="view-link" href={`https://www.google.com/search?q=${encodeURIComponent(b.title)}`} target="_blank" rel="noopener noreferrer">View</a>
-                              <button className="px-2 py-1 text-pink-600" onClick={() => handleToggleFavorite(b)}>💔</button>
-                            </div>
-                          </div>
-                          </article>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-        </div>
-
-        {/* Personalized rows from Google based on user preferences */}
-        {Object.entries(personalized).map(([label, items]) => (
-          <div key={label} className="modern-card p-6 bg-pink-50">
+        {recentlyViewed && recentlyViewed.length > 0 && (
+          <div className="modern-card p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-pink-700 mb-1">{label}</h3>
-                <p className="text-sm text-pink-600">Recommendations based on your preferences</p>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">
+                  🕒 Recently Viewed
+                </h3>
+                <p className="text-sm text-slate-600">Pick up where you left off</p>
+              </div>
+              <div>
+                <button
+                  className="px-3 py-1.5 rounded-lg text-sm border bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40"
+                  onClick={() => { if (userDataManager) { userDataManager.saveData('history', []); } else { localStorage.removeItem('vibesphere_guest_history'); } setRecentlyViewed([]); }}
+                >
+                  Clear History
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto -mx-3 py-2">
-              <div className="flex gap-4 px-3">
-                  {items.map((item) => {
-                  const info = item.volumeInfo || {};
-                  const title = info.title || 'Untitled';
-                  const authors = (info.authors || []).join(', ');
-                  const thumb = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
-                  return (
-                    <div key={item.id} className="w-56 flex-shrink-0">
-                      <div className="book-tile">
-                        <article className="book-card">
+              <div className="flex gap-5 px-3">
+                {recentlyViewed.filter(b => !!b.cover).map((b) => (
+                  <div key={b.id} className="w-56 flex-shrink-0">
+                    <div className="book-tile">
+                      <article className="book-card">
                         <div className="book-cover-wrap">
-                          {thumb ? <BookImage className="book-cover img-contain" primaryUrl={thumb.replace(/^http:/,'https:')} title={title} author={authors} /> : <div className="skeleton book-cover" />}
+                          {b.cover && (
+                            <img
+                              className="book-cover book-cover--strict"
+                              src={b.cover.replace(/^http:/,'https:')}
+                              alt={`${b.title} cover`}
+                              loading="lazy"
+                              onError={(e)=>{ const card = e.currentTarget.closest('.book-card'); if (card) card.style.display='none'; }}
+                            />
+                          )}
                         </div>
                         <div className="book-info">
-                          <h4 className="book-title">{title}</h4>
-                          <p className="book-authors">{authors}</p>
-                          <div className="mt-auto flex items-center gap-2"><a className="view-link" href={info.infoLink} target="_blank" rel="noopener noreferrer" onClick={() => recordHistory(item)}>View</a>
-                          {userDataManager && (
-                            <button className="px-2 py-1 text-pink-600" onClick={() => toggleFavorite(userDataManager, { id: item.id, title, authors, cover: thumb })}>{(userDataManager.getData('favorites', []).find(b=>b.id===item.id) ? '💖' : '🤍')}</button>
-                          )}</div>
+                          <h4 className="book-title">{b.title}</h4>
+                          <p className="book-authors">{b.authors}</p>
+                          <div className="mt-auto flex items-center gap-2">
+                            <a className="view-link" href={b.infoLink || `https://www.google.com/search?q=${encodeURIComponent(b.title)}`} target="_blank" rel="noopener noreferrer">View</a>
+                          </div>
                         </div>
-                        </article>
-                      </div>
+                      </article>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        ))}
+        )}
 
-        {/* Local Curated Collections */}
-        <div className="modern-card p-6 bg-gradient-to-br from-purple-50 to-pink-50">
+        {/* Section 1: Top Picks (Trending Google Books) */}
+        <div className="modern-card p-6 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-purple-700 mb-1">📚 Curated for You</h3>
-              <p className="text-sm text-purple-600">Handpicked selections from our collection</p>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                🔥 Top Picks for You
+              </h3>
+              <p className="text-sm text-slate-600">Trending and popular books from around the world</p>
+            </div>
+            <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-semibold shadow-lg">
+              Trending
             </div>
           </div>
           <div className="overflow-x-auto -mx-3 py-2">
-            <div className="flex gap-4 px-3">
-              {BOOKS.slice(0, 12).map((book) => (
-                <div key={book.id} className="w-56 flex-shrink-0">
+            <div className="flex gap-5 px-3">
+              {loadingHome && topPicks.length === 0 && Array.from({length:8}).map((_,i)=> (
+                <div key={`home-skel-${i}`} className="w-60 flex-shrink-0">
                   <div className="book-tile">
-                    <article className="book-card">
+                    <article className="book-card skeleton-card">
                       <div className="book-cover-wrap">
-                        <BookImage 
-                          className="book-cover img-contain" 
-                          primaryUrl={book.cover} 
-                          title={book.title} 
-                          author={book.author}
-                        />
+                        <div className="skeleton shimmer" />
                       </div>
                       <div className="book-info">
-                        <h4 className="book-title">{book.title}</h4>
-                        <p className="book-authors">{book.author}</p>
-                        <p className="text-xs text-slate-600 mt-1 line-clamp-2">{book.summary}</p>
-                        <div className="mt-auto flex items-center gap-2">
-                          <button
-                            className="view-link"
-                            onClick={() => {
-                              recordHistory({
-                                id: book.id,
-                                volumeInfo: {
-                                  title: book.title,
-                                  authors: [book.author],
-                                  imageLinks: { thumbnail: book.cover },
-                                  infoLink: `https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author)}`
-                                }
-                              });
-                              addToLibrary(book);
-                            }}
-                          >
-                            Add to Library
-                          </button>
-                          {userDataManager && (
-                            <button 
-                              className="px-2 py-1 text-pink-600" 
-                              onClick={() => toggleFavorite(userDataManager, { 
-                                id: book.id, 
-                                title: book.title, 
-                                authors: book.author, 
-                                cover: book.cover 
-                              })}
-                            >
-                              {(userDataManager.getData('favorites', []).find(b=>b.id===book.id) ? '💖' : '🤍')}
-                            </button>
-                          )}
-                        </div>
+                        <div className="skeleton skeleton-line" style={{width:'70%'}} />
+                        <div className="skeleton skeleton-line" style={{width:'50%'}} />
+                        <div className="card-footer" />
                       </div>
                     </article>
                   </div>
                 </div>
               ))}
+              {(topPicks || []).map((item) => (
+                <GoogleBookTile key={item.id} item={item} userDataManager={userDataManager} />
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Section 2: Recently Viewed (moved above Top Picks) - removed from here to avoid duplication */}
+
+        {/* Section 3: Personalized Rows (Genre-based) */}
+        {Object.entries(personalized).map(([label, items]) => (
+          <div key={label} className="modern-card p-6 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-1">
+                  ✨ {label}
+                </h3>
+                <p className="text-sm text-slate-600">Handpicked recommendations just for you</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto -mx-3 py-2">
+              <div className="flex gap-5 px-3">
+                {(items || []).map((item) => (
+                  <GoogleBookTile key={item.id} item={item} userDataManager={userDataManager} />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
       </section>
     </main>
   );
@@ -1304,15 +1475,20 @@ function Library({ user, ratings, setRatings, userDataManager }) {
         </div>
       ) : (
         <div className="grid-responsive">
-          {lib.map((b) => (
+          {lib.filter(b => !!b.cover).map((b) => (
             <div key={b.id} className="modern-card overflow-hidden group">
               <div className="relative overflow-hidden">
-                <img 
-                  src={b.cover} 
-                  alt={b.title} 
-                  className="book-cover group-hover:scale-110 transition-transform duration-500" 
-                  loading="lazy"
-                />
+                <div className="book-cover-wrap">
+                  {b.cover ? (
+                    <img
+                      src={b.cover}
+                      className="book-cover"
+                      alt={b.title}
+                      loading="lazy"
+                      onError={(e)=>{ const card = e.currentTarget.closest('.modern-card'); if (card) card.style.display='none'; }}
+                    />
+                  ) : null}
+                </div>
                 {b.rating && (
                   <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
                     <span>⭐</span>
@@ -1428,14 +1604,20 @@ function Favorites({ userDataManager }) {
       </div>
 
       <div className="grid-responsive">
-        {favorites.map((b) => (
+        {favorites.filter(b => !!b.cover).map((b) => (
           <div key={b.id} className="modern-card overflow-hidden group">
             <div className="relative overflow-hidden">
-              {b.cover ? (
-                <img src={b.cover} alt={b.title} className="book-cover group-hover:scale-110 transition-transform duration-500" />
-              ) : (
-                <div className="skeleton book-cover" />
-              )}
+              <div className="explore-cover-wrapper">
+                {b.cover ? (
+                  <img
+                    src={b.cover}
+                    className="explore-cover-img"
+                    alt={b.title}
+                    loading="lazy"
+                    onError={(e)=>{ const card = e.currentTarget.closest('.modern-card'); if (card) card.style.display='none'; }}
+                  />
+                ) : null}
+              </div>
             </div>
             <div className="p-3 flex-1 flex flex-col">
               <h3 className="font-medium leading-tight line-clamp-2">{b.title}</h3>
@@ -1737,9 +1919,6 @@ export default function App() {
               setRatings={setRatings}
               userDataManager={userDataManager}
             />
-          )}
-          {route === "discover" && (
-            <DiscoverPage userDataManager={userDataManager} />
           )}
           {route === "explore" && (
             <GoogleBooksGallery userDataManager={userDataManager} />

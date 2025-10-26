@@ -1,7 +1,9 @@
 // API service for communicating with the backend
 // During local tunnel testing we want the frontend to call the public backend tunnel.
 // Public backend tunnel URL (created via localtunnel): https://curly-ties-fry.loca.lt
-const API_BASE_URL = (typeof window !== 'undefined' && window.__API_BASE_URL__) || 'https://curly-ties-fry.loca.lt/api';
+// Prefer an injected URL (e.g. from hosting or a dev tunnel). Fall back to localhost
+// so the frontend talks to the local backend during development.
+const API_BASE_URL = (typeof window !== 'undefined' && window.__API_BASE_URL__) || 'http://localhost:5000/api';
 
 class ApiService {
   constructor() {

@@ -1,7 +1,7 @@
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
 
 // Simple in-memory cache to speed up repeated queries during a dev session.
-// Key is `${query}::${count}`. TTL is short (30s) to avoid stale results.
+// Key is `${query}::${count}`. TTL is short to avoid stale results.
 const cache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -22,6 +22,42 @@ function normalizeImageLinks(item){
   return item;
 }
 
+function isAdultContent(item) {
+  if (!item || !item.volumeInfo) return false;
+  const info = item.volumeInfo;
+  // Check Google Books maturityRating
+  if (info.maturityRating && String(info.maturityRating).toUpperCase() === 'MATURE') return true;
+
+  const adultKeywords = [
+    'erotica','adult','explicit','18+','nsfw','sex','sexual','porn','xxx','mature','smut','r18','r-18','bdsm','fetish','taboo','incest','hentai','yaoi','yuri'
+  ];
+  const text = [info.title, info.subtitle, info.description, ...(info.categories||[]), ...(info.subjects||[])]
+    .filter(Boolean).join(' ').toLowerCase();
+  return adultKeywords.some(k => text.includes(k));
+}
+
+// Runtime blacklist: any title/author/id listed here will be excluded from
+// Google Books results returned by the helper. Lowercase substrings are used.
+const RUNTIME_BLOCKLIST = [
+  'the ticket',
+];
+
+export function isBlocked(item) {
+  if (!item || !item.volumeInfo) return false;
+  const info = item.volumeInfo;
+  const title = (info.title || '').toString().toLowerCase();
+  const authors = (info.authors || []).join(' ').toLowerCase();
+  const id = (item.id || '').toString().toLowerCase();
+
+  for (const sub of RUNTIME_BLOCKLIST) {
+    if (!sub) continue;
+    if (title.includes(sub)) return true;
+    if (authors.includes(sub)) return true;
+    if (id.includes(sub)) return true;
+  }
+  return false;
+}
+
 // fetchBooks now accepts an optional AbortSignal as third param so callers
 // can cancel inflight requests (useful for debounced searches).
 export default async function fetchBooks(query, startIndex = 0, max = 40, signal){
@@ -30,7 +66,9 @@ export default async function fetchBooks(query, startIndex = 0, max = 40, signal
   const res = await fetch(url, signal ? { signal } : undefined);
   if(!res.ok) throw new Error('Network error');
   const json = await res.json();
-  const items = (json.items || []).map(normalizeImageLinks);
+  let items = (json.items || []).map(normalizeImageLinks);
+  // Filter out adult/mature results and runtime-blocked titles
+  items = items.filter(i => !isAdultContent(i) && !isBlocked(i));
   return items;
 }
 
@@ -51,6 +89,8 @@ export async function fetchBooksMany(query, count = 200, signal){
   }
   const results = await Promise.all(requests);
   const flat = results.flat();
-  cache.set(key, { t: now, v: flat });
-  return flat.map(normalizeImageLinks);
+  // Normalize and filter adult content + runtime-blocklist
+  const normalized = flat.map(normalizeImageLinks).filter(i => !isAdultContent(i) && !isBlocked(i));
+  cache.set(key, { t: now, v: normalized });
+  return normalized;
 }

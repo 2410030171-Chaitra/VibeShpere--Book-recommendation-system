@@ -42,7 +42,8 @@ app.get('/api/health', (req, res) => {
 // ...image proxy removed; restoring original backend routes
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
+  void _next;
   console.error('Error:', err);
   res.status(500).json({ 
     error: 'Internal server error',

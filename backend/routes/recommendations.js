@@ -1,10 +1,9 @@
 const express = require('express');
-const axios = require('axios');
 const router = express.Router();
 
 // In-memory cache (per-process) with TTL
 const cache = new Map(); // key -> { t, v }
-const TTL_MS = 30 * 60 * 1000; // 30 minutes for better performance
+const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function getCached(key){
   const rec = cache.get(key);
@@ -17,119 +16,54 @@ function getCached(key){
 }
 function setCached(key, v){ cache.set(key, { t: Date.now(), v }); }
 
-// Mood to search query mapping with intelligent AI-like recommendations
-const MOOD_TO_QUERY_MAP = {
-  happy: ['subject:humor', 'subject:comedy', 'uplifting stories', 'feel-good fiction'],
-  sad: ['emotional stories', 'subject:drama', 'tear-jerker', 'moving fiction'],
-  romantic: ['subject:romance', 'love stories', 'romantic fiction', 'contemporary romance'],
-  adventurous: ['subject:adventure', 'action fiction', 'thriller', 'quest stories'],
-  mysterious: ['subject:mystery', 'detective stories', 'crime fiction', 'suspense'],
-  inspiring: ['motivational', 'subject:biography', 'inspiring stories', 'self-help'],
-  calm: ['peaceful reads', 'cozy fiction', 'gentle stories', 'meditation'],
-  dark: ['subject:thriller', 'psychological fiction', 'dark fantasy', 'noir'],
-  fantastical: ['subject:fantasy', 'magical realism', 'science fiction', 'epic fantasy'],
-  thoughtful: ['subject:philosophy', 'literary fiction', 'contemplative', 'intellectual']
-};
-
-// Genre refinement queries
-const GENRE_QUERIES = {
-  fiction: 'subject:fiction',
-  nonfiction: 'subject:nonfiction',
-  mystery: 'subject:mystery',
-  romance: 'subject:romance',
-  fantasy: 'subject:fantasy',
-  sciencefiction: 'subject:science+fiction',
-  'science fiction': 'subject:science+fiction',
-  thriller: 'subject:thriller',
-  horror: 'subject:horror',
-  biography: 'subject:biography',
-  history: 'subject:history',
-  selfhelp: 'subject:self-help',
-  'self-help': 'subject:self-help',
-  business: 'subject:business',
-  poetry: 'subject:poetry',
-  drama: 'subject:drama',
-  comedy: 'subject:comedy'
-};
-
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
 
 function normalizeImage(url){
   if(!url) return null;
-  try { 
-    // Force HTTPS
-    let improved = url.replace(/^http:/,'https:');
-    // Keep the original zoom=1 and add edge=curl for better availability
-    if (!improved.includes('zoom=')) {
-      improved = improved.replace('&source=', '&zoom=1&source=');
-    }
-    return improved;
-  } catch(e){ return url; }
-}
-
-function bestIsbn(info){
-  const ids = (info && info.industryIdentifiers) || [];
-  const i13 = ids.find(x=>x.type==='ISBN_13')?.identifier;
-  const i10 = ids.find(x=>x.type==='ISBN_10')?.identifier;
-  return i13 || i10 || null;
+  try { return url.replace(/^http:/,'https:'); } catch(e){ return url; }
 }
 
 function pickCover(info){
-  // Try to get the best quality image available
-  const images = info?.imageLinks || {};
-  // Prefer larger images first
-  let cover = images.large || images.medium || images.thumbnail || images.smallThumbnail;
-  
-  // If no Google Books cover, try Open Library as fallback
-  if (!cover) {
-    const isbn = bestIsbn(info);
-    if (isbn) {
-      // Open Library will return a placeholder if cover doesn't exist
-      cover = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
-    }
-  }
-  
-  // Final fallback to server default - frontend will handle this
-  if (!cover) {
-    cover = '/assets/default_cover.svg';
-  }
-  
-  return normalizeImage(cover);
+  const g = info?.imageLinks?.thumbnail || info?.imageLinks?.smallThumbnail;
+  return normalizeImage(g || null);
 }
 
 function cleanItem(item){
   const info = item.volumeInfo || {};
   const cover = pickCover(info);
-  // Keep all books, even without covers (frontend will show placeholder)
+  if(!cover) return null;
+  // Exclude explicit / mature-rated volumes reported by Google Books
+  if (info.maturityRating && String(info.maturityRating).toUpperCase() === 'MATURE') return null;
+  // Filter out 18+ books by keywords
+  const adultKeywords = [
+    'erotica', 'adult', 'explicit', '18+', 'nsfw', 'sex', 'sexual', 'porn', 'xxx', 'mature', 'smut', 'r18', 'r-18', 'bdsm', 'fetish', 'taboo', 'incest', 'hentai', 'yaoi', 'yuri', 'lgbt erotica', 'gay erotica', 'lesbian erotica'
+  ];
+  const text = [info.title, info.subtitle, info.description, ...(info.categories||[]), ...(info.subjects||[])]
+    .join(' ').toLowerCase();
+  if(adultKeywords.some(k => text.includes(k))) return null;
+  // Runtime blocklist for specific titles/authors/ids
+  const RUNTIME_BLOCKLIST = [ 'the ticket' ];
+  const titleLower = (info.title || '').toLowerCase();
+  const authorsLower = (info.authors || []).join(' ').toLowerCase();
+  const idLower = (item.id || '').toLowerCase();
+  if (RUNTIME_BLOCKLIST.some(b => !b ? false : titleLower.includes(b) || authorsLower.includes(b) || idLower.includes(b))) return null;
   return {
     id: item.id,
     title: info.title || 'Untitled',
-    authors: info.authors || ['Unknown Author'],
-    author: (info.authors || ['Unknown Author']).join(', '),
-    description: info.description || info.subtitle || 'No description available.',
+    authors: info.authors || [],
+    description: info.description || info.subtitle || '',
     cover,
-    thumbnail: cover,
-    infoLink: info.infoLink || `https://www.google.com/search?q=${encodeURIComponent(info.title)}`,
-    publishedDate: info.publishedDate || null,
-    publisher: info.publisher || null,
-    pageCount: info.pageCount || null,
-    categories: info.categories || [],
-    averageRating: info.averageRating || 0,
-    ratingsCount: info.ratingsCount || 0,
-    isbn: bestIsbn(info)
+    infoLink: info.infoLink || null,
+    publishedDate: info.publishedDate || null
   };
 }
 
 async function fetchPage(q, startIndex=0, max=40){
-  // Use standard parameters that work reliably with Google Books API
-  const url = API_BASE + encodeURIComponent(q) + `&startIndex=${startIndex}&maxResults=${max}&printType=books`;
-  try {
-    const response = await axios.get(url, { timeout: 10000 });
-    return response.data.items || [];
-  } catch (error) {
-    console.error(`Error fetching page for "${q}":`, error.message);
-    return [];
-  }
+  const url = API_BASE + encodeURIComponent(q) + `&startIndex=${startIndex}&maxResults=${max}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Upstream error');
+  const json = await res.json();
+  return (json.items || []);
 }
 
 async function fetchMany(q, total=120){
@@ -157,13 +91,51 @@ router.get('/trending', async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit||'40',10), 200);
     const key = `trending:${limit}`;
     const c = getCached(key); if(c) return res.json(c);
-    // Compose a broad query to get popular titles with covers
+    // Compose a broad query to get popular titles with covers from Google Books
     const q = 'bestsellers OR subject:fiction OR intitle:novel';
-    const pool = await fetchMany(q, Math.max(limit*3, 120));
-    const cleaned = pool.map(cleanItem).filter(Boolean);
-    const unique = [];
+    const googlePool = await fetchMany(q, Math.max(limit*2, 80));
+    const googleCleaned = googlePool.map(cleanItem).filter(Boolean);
+
+    // Fetch trending books from Open Library (no API key needed)
+    async function fetchOpenLibrary(limit) {
+      const url = `https://openlibrary.org/subjects/bestsellers.json?limit=${limit}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const json = await res.json();
+        const adultKeywords = [
+          'erotica', 'adult', 'explicit', '18+', 'nsfw', 'sex', 'sexual', 'porn', 'xxx', 'mature', 'smut', 'r18', 'r-18', 'bdsm', 'fetish', 'taboo', 'incest', 'hentai', 'yaoi', 'yuri', 'lgbt erotica', 'gay erotica', 'lesbian erotica'
+        ];
+        return (json.works || [])
+          .map(work => ({
+            id: 'OL-' + work.key,
+            title: work.title,
+            authors: (work.authors || []).map(a => a.name),
+            description: work.subject ? work.subject.join(', ') : '',
+            cover: work.cover_id ? `https://covers.openlibrary.org/b/id/${work.cover_id}-L.jpg` : null,
+            infoLink: `https://openlibrary.org${work.key}`,
+            publishedDate: work.first_publish_year || null
+          }))
+          .filter(b => !!b.cover && !adultKeywords.some(k => (b.title + ' ' + b.description).toLowerCase().includes(k)));
+      } catch (e) {
+        return [];
+      }
+    }
+
+    const openLibBooks = await fetchOpenLibrary(limit);
+
+    // Merge and deduplicate by title+author
+    const allBooks = [...googleCleaned, ...openLibBooks];
     const seen = new Set();
-    for(const it of cleaned){ if(!seen.has(it.id)){ seen.add(it.id); unique.push(it);} if(unique.length>=limit) break; }
+    const unique = [];
+    for (const it of allBooks) {
+      const key = (it.title + '|' + (it.authors?.join(',') || '')).toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(it);
+      }
+      if (unique.length >= limit) break;
+    }
     setCached(key, unique);
     res.json(unique);
   } catch (e) {
@@ -172,88 +144,29 @@ router.get('/trending', async (req, res) => {
   }
 });
 
-// GET /api/recommendations/search?q=...&type=author|title|general&limit=...
+// GET /api/recommendations/search?q=...&limit=...
 router.get('/search', async (req, res) => {
   try {
-    let { q = '', type = 'general', limit = '60' } = req.query;
+    let { q = '', limit = '60' } = req.query;
     limit = Math.min(parseInt(limit,10)||60, 200);
     if(!q) q = 'bestsellers';
-    
+    // Author mapping: author:Name or by Name -> inauthor:Name
     const m = String(q).trim();
     let qq = m;
-    let isAuthorSearch = false;
-    let authorName = '';
-    
-    // Handle explicit type parameter
-    if (type === 'author') {
-      authorName = m;
-      qq = `inauthor:${m}`;
-      isAuthorSearch = true;
-    } else if (type === 'title') {
-      qq = `intitle:${m}`;
-    } else if (type === 'general') {
-      // Auto-detect format or use general search
-      if (m.startsWith('inauthor:')) {
-        qq = m;
-        isAuthorSearch = true;
-        authorName = m.replace('inauthor:', '').trim();
-      }
-      else if (m.startsWith('intitle:') || m.startsWith('subject:')) {
-        qq = m;
-      }
-      // Explicit author prefixes: author:Name or by Name -> inauthor:Name
-      else if (m.match(/^author\s*:\s*(.+)$/i)) {
-        const match = m.match(/^author\s*:\s*(.+)$/i);
-        authorName = match[1];
-        qq = `inauthor:${authorName}`;
-        isAuthorSearch = true;
-      }
-      else if (m.match(/^by\s+(.+)$/i)) {
-        const match = m.match(/^by\s+(.+)$/i);
-        authorName = match[1];
-        qq = `inauthor:${authorName}`;
-        isAuthorSearch = true;
-      }
-      // genre:Fantasy -> subject:Fantasy
-      else if (m.match(/^genre\s*:\s*(.+)$/i)) {
-        const match = m.match(/^genre\s*:\s*(.+)$/i);
-        qq = `subject:${match[1]}`;
-      }
-      // For multi-word queries that look like book titles, use intitle: for better results
-      else if (m.split(' ').length >= 2 && !m.match(/^\d+$/)) {
-        qq = `intitle:${m}`;
-      }
-      // Otherwise use as-is
-      else {
-        qq = m;
-      }
-    }
+    const authorPrefix = m.match(/^author\s*:\s*(.+)$/i);
+    const byPrefix = m.match(/^by\s+(.+)$/i);
+    if(authorPrefix) qq = `inauthor:${authorPrefix[1]}`;
+    else if(byPrefix) qq = `inauthor:${byPrefix[1]}`;
+    // genre:Fantasy -> subject:Fantasy
+    const genrePrefix = m.match(/^genre\s*:\s*(.+)$/i);
+    if(genrePrefix) qq = `subject:${genrePrefix[1]}`;
 
-    const key = `search:${type}:${qq}:${limit}`;
+    const key = `search:${qq}:${limit}`;
     const c = getCached(key); if(c) return res.json(c);
-    
-    // Fetch extra books to ensure enough after filtering
-    const fetchAmount = Math.max(limit*3, 200);
-    const pool = await fetchMany(qq, fetchAmount);
-    let cleaned = pool.map(cleanItem).filter(Boolean);
-    
-    // For explicit author searches, strictly filter to only books BY that author
-    if (isAuthorSearch && authorName) {
-      const authorLower = authorName.toLowerCase();
-      cleaned = cleaned.filter(book => {
-        const bookAuthors = book.authors || [];
-        return bookAuthors.some(author => {
-          const authorNameLower = String(author || '').toLowerCase();
-          // Match full name or significant parts of name
-          return authorNameLower.includes(authorLower) || 
-                 authorLower.split(' ').some(part => part.length > 2 && authorNameLower.includes(part));
-        });
-      });
-    }
-    
-    const results = cleaned.slice(0, limit);
-    setCached(key, results);
-    res.json(results);
+    const pool = await fetchMany(qq, Math.max(limit*2, 120));
+    const cleaned = pool.map(cleanItem).filter(Boolean).slice(0, limit);
+    setCached(key, cleaned);
+    res.json(cleaned);
   } catch (e) {
     console.error('search error', e);
     res.status(500).json({ error: 'Failed to search' });
@@ -265,54 +178,19 @@ router.get('/discover', async (req, res) => {
   try {
     const { mood = '', genre = '', limit = '40' } = req.query;
     const lim = Math.min(parseInt(limit,10)||40, 200);
-    
-    // Use the comprehensive mood mapping
-    const moodQueries = MOOD_TO_QUERY_MAP[String(mood).toLowerCase()] || [];
-    const genreQuery = GENRE_QUERIES[String(genre).toLowerCase().replace(/\s+/g, '')] || '';
-    
-    let queries = [];
-    if (moodQueries.length > 0) {
-      queries = moodQueries;
-      // Add genre filter if provided
-      if (genreQuery) {
-        queries = queries.map(q => `${q}+${genreQuery}`);
-      }
-    } else if (genreQuery) {
-      queries = [genreQuery];
-    } else {
-      queries = ['bestsellers'];
-    }
-    
+    const moodPart = MOOD_MAP[String(mood).toLowerCase()] || '';
+    const genrePart = genre ? `subject:${genre}` : '';
+    const parts = [moodPart, genrePart].filter(Boolean);
+    const q = parts.length ? parts.join(' ') : 'bestsellers';
     const key = `discover:${mood}:${genre}:${lim}`;
-    const c = getCached(key); 
-    if(c) return res.json({ success: true, mood, genre, count: c.length, books: c });
-    
-    // Fetch from multiple queries and combine - increase pool to get more books with covers
-    const allBooks = [];
-    for (const q of queries) {
-      if (allBooks.length >= lim * 3) break; // Get 3x more to filter for covers
-      const pool = await fetchMany(q, 120); // Increased from 80 to 120
-      const cleaned = pool.map(cleanItem).filter(Boolean);
-      allBooks.push(...cleaned);
-    }
-    
-    // Remove duplicates
-    const unique = [];
-    const seen = new Set();
-    for(const book of allBooks){ 
-      if(!seen.has(book.id)){ 
-        seen.add(book.id); 
-        unique.push(book);
-      } 
-      if(unique.length >= lim) break; 
-    }
-    
-    const result = unique.slice(0, lim);
-    setCached(key, result);
-    res.json({ success: true, mood, genre, count: result.length, books: result });
+    const c = getCached(key); if(c) return res.json(c);
+    const pool = await fetchMany(q, Math.max(lim*3, 120));
+    const cleaned = pool.map(cleanItem).filter(Boolean).slice(0, lim);
+    setCached(key, cleaned);
+    res.json(cleaned);
   } catch (e) {
     console.error('discover error', e);
-    res.status(500).json({ success: false, error: 'Failed to discover books' });
+    res.status(500).json({ error: 'Failed to discover' });
   }
 });
 

@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import BookImage from './BookImage';
+
+// Helper to create SVG placeholder
+function createPlaceholder(title) {
+  const encoded = encodeURIComponent(title.substring(0, 30));
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='270' viewBox='0 0 180 270'%3E%3Crect fill='%23e2e8f0' width='180' height='270'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%2364748b' text-length='160'%3E${encoded}%3C/text%3E%3C/svg%3E`;
+}
 
 // RecentlyViewed shows a horizontal list of books the user opened recently.
 // It reads/writes from the provided `userDataManager` or from localStorage as a fallback.
@@ -91,38 +96,50 @@ export default function RecentlyViewed({ userDataManager }) {
         <div className="overflow-x-auto -mx-3 py-2">
           <div className="flex gap-4 px-3">
             {history.map((h) => {
-              console.log('📚 Rendering history item:', h.title, 'Cover:', h.cover, 'ISBN:', h.isbn);
-              return (
-              <div key={h.id} className="w-56 flex-shrink-0">
-                <div className="book-tile">
-                  <article className="book-card">
-                    <div className="book-cover-wrap">
-                      <BookImage
-                        primaryUrl={h.cover || h.thumbnail}
-                        altIdentifiers={{ 
-                          isbn: h.isbn,
-                          googleBooksId: h.id 
-                        }}
-                        title={h.title}
-                        author={h.authors || h.author}
-                        className="book-cover"
-                      />
-                    </div>
-                    <div className="book-info">
-                      <h4 className="book-title">{h.title}</h4>
-                      <p className="book-authors">{h.authors}</p>
-                      <div className="mt-auto flex items-center gap-2">
-                        <a className="view-link" href={h.infoLink} target="_blank" rel="noopener noreferrer">View</a>
-                      </div>
-                    </div>
-                  </article>
-                </div>
-              </div>
-            )}
-            )}
+              console.log('📚 Recently Viewed item:', h.title, 'Cover:', h.cover);
+              return <HistoryBookCard key={h.id} book={h} />;
+            })}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// BookCard component for history items
+function HistoryBookCard({ book }) {
+  const [imgSrc, setImgSrc] = useState(book.cover || createPlaceholder(book.title));
+  const [imgError, setImgError] = useState(false);
+
+  const handleImageError = () => {
+    console.log('❌ Image failed:', book.cover, 'for book:', book.title);
+    if (!imgError) {
+      setImgError(true);
+      setImgSrc(createPlaceholder(book.title));
+    }
+  };
+
+  return (
+    <div className="w-56 flex-shrink-0">
+      <div className="book-tile">
+        <article className="book-card">
+          <div className="book-cover-wrap">
+            <img 
+              className="book-cover" 
+              src={imgSrc} 
+              alt={`${book.title} cover`}
+              onError={handleImageError}
+            />
+          </div>
+          <div className="book-info">
+            <h4 className="book-title">{book.title}</h4>
+            <p className="book-authors">{book.authors}</p>
+            <div className="mt-auto flex items-center gap-2">
+              <a className="view-link" href={book.infoLink} target="_blank" rel="noopener noreferrer">View</a>
+            </div>
+          </div>
+        </article>
+      </div>
     </div>
   );
 }

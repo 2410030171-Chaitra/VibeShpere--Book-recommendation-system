@@ -88,3 +88,54 @@ To use in a real project:
 ## License
 
 This project is open source and available under the MIT License.
+
+## Development & Running (local)
+
+If you're developing locally, here's a short reference to get the site running and where to edit the filtering rules.
+
+- Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+- Start the backend (API) and frontend (Vite) for development. If default ports are occupied you can override them.
+
+   Start backend only (uses `backend/.env` PORT or default 5000):
+
+   ```bash
+   cd backend
+   npm run dev
+   # or to force a different port in the same terminal:
+   PORT=5001 npm run dev
+   ```
+
+   Start frontend only (Vite). If port 5173 is taken, pass `--port`:
+
+   ```bash
+   npm run dev -- --port 5174
+   ```
+
+   Or run both concurrently (requires `concurrently` - included in dev deps):
+
+   ```bash
+   npm run dev:full
+   ```
+
+- Open the site in your browser:
+
+   - Frontend: http://localhost:5173 (or port you started Vite on)
+   - Backend health: http://localhost:5001/api/health (if you started backend on 5001)
+
+Where to edit the blocklist and filters
+- Frontend runtime blocklist and Google Books filtering helper:
+
+   - `src/services/googleBooks.js` — the helper used by the React app to query Google Books and apply centralized filtering. The file exports `fetchBooks`, `fetchBooksMany`, and `isBlocked`. To hide specific titles globally, add lowercase substrings or IDs to the `RUNTIME_BLOCKLIST` array in this file.
+
+- Server-side filtering (applies to merged Open Library + Google Books endpoints):
+
+   - `backend/routes/recommendations.js` — has a `cleanItem()` helper that filters mature/adult content and also contains a runtime blocklist check. If you want server-only control over blocked items, update the list there.
+
+Notes
+- The project uses public Google Books endpoints and Open Library; no API keys are required for the demo.
+- `src/components/GoogleSignInButton.jsx` provides a guest sign-in path so you can demo authenticated flows without configuring Firebase.

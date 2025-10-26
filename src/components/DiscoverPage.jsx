@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import MoodSelector from './MoodSelector';
 import BookImage from './BookImage';
+import GoogleSignInButton from './GoogleSignInButton';
+// import RecentlyViewed from './RecentlyViewed';
 import { getRecommendations, getTrendingBooks } from '../services/recommendations';
 import fetchBooks from '../services/googleBooks';
 
@@ -30,6 +32,19 @@ export default function DiscoverPage({ userDataManager }) {
   const [loading, setLoading] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [favorites, setFavorites] = useState([]);
+
+  // dark mode state (persisted in localStorage)
+  const [dark, setDark] = useState(() => {
+    try { return localStorage.getItem('vibesphere_theme') === 'dark'; } catch(e){ return false; }
+  });
+
+  useEffect(() => {
+    try {
+      if (dark) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+      localStorage.setItem('vibesphere_theme', dark ? 'dark' : 'light');
+    } catch (e) { /* ignore */ }
+  }, [dark]);
 
   // Helper to record book to history
   const recordHistory = (book) => {
@@ -81,13 +96,19 @@ export default function DiscoverPage({ userDataManager }) {
   async function loadTrendingBooks() {
     try {
       setLoadingTrending(true);
-      const trending = await getTrendingBooks(20);
       
-      // If backend fails or returns empty, use Google Books as fallback
-      if (!trending || trending.length === 0) {
-        console.log('📚 Backend unavailable, using Google Books for trending...');
-        const googleTrending = await fetchBooks('bestsellers OR popular OR trending', 20);
-        const formatted = googleTrending.map(item => ({
+      // Fetch trending books directly from Google Books with strict cover validation
+      const googleTrending = await fetchBooks('bestsellers OR trending OR popular', 0, 40);
+      
+      // Filter and format with strict cover validation
+      const formatted = googleTrending
+        .filter(item => {
+          const info = item.volumeInfo || {};
+          // STRICT: Only include books with valid cover images
+          const hasCover = !!(info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
+          return hasCover;
+        })
+        .map(item => ({
           id: item.id,
           title: item.volumeInfo?.title || 'Untitled',
           author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
@@ -97,32 +118,13 @@ export default function DiscoverPage({ userDataManager }) {
           description: item.volumeInfo?.description || '',
           averageRating: item.volumeInfo?.averageRating || 0,
           infoLink: item.volumeInfo?.infoLink || ''
-        }));
-        setTrendingBooks(formatted);
-      } else {
-        setTrendingBooks(trending);
-      }
+        }))
+        .slice(0, 20);
+      
+      setTrendingBooks(formatted);
     } catch (error) {
       console.error('Error loading trending books:', error);
-      // Fallback to Google Books on error
-      try {
-        const googleTrending = await fetchBooks('bestsellers OR popular', 20);
-        const formatted = googleTrending.map(item => ({
-          id: item.id,
-          title: item.volumeInfo?.title || 'Untitled',
-          author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
-          authors: item.volumeInfo?.authors || [],
-          cover: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          description: item.volumeInfo?.description || '',
-          averageRating: item.volumeInfo?.averageRating || 0,
-          infoLink: item.volumeInfo?.infoLink || ''
-        }));
-        setTrendingBooks(formatted);
-      } catch (fallbackError) {
-        console.error('Google Books fallback also failed:', fallbackError);
-        setTrendingBooks([]);
-      }
+      setTrendingBooks([]);
     } finally {
       setLoadingTrending(false);
     }
@@ -132,14 +134,28 @@ export default function DiscoverPage({ userDataManager }) {
     try {
       setLoading(true);
       const genre = selectedGenre === 'all' ? '' : selectedGenre;
-      const recommended = await getRecommendations(selectedMood, genre, 40);
       
-      // If backend fails or returns empty, use Google Books as fallback
-      if (!recommended || recommended.length === 0) {
-        console.log('📚 Backend unavailable, using Google Books for recommendations...');
-        const query = [selectedMood, genre].filter(Boolean).join(' ') || 'popular books';
-        const googleBooks = await fetchBooks(query, 40);
-        const formatted = googleBooks.map(item => ({
+      // Build smart query based on mood and genre
+      let query = '';
+      if (selectedMood && genre) {
+        query = `${selectedMood} ${genre}`;
+      } else if (selectedMood) {
+        query = selectedMood;
+      } else if (genre) {
+        query = `subject:${genre}`;
+      }
+      
+      const googleBooks = await fetchBooks(query || 'popular books', 0, 40);
+      
+      // Filter and format with strict cover validation
+      const formatted = googleBooks
+        .filter(item => {
+          const info = item.volumeInfo || {};
+          // STRICT: Only include books with valid cover images
+          const hasCover = !!(info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
+          return hasCover;
+        })
+        .map(item => ({
           id: item.id,
           title: item.volumeInfo?.title || 'Untitled',
           author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
@@ -149,33 +165,13 @@ export default function DiscoverPage({ userDataManager }) {
           description: item.volumeInfo?.description || '',
           averageRating: item.volumeInfo?.averageRating || 0,
           infoLink: item.volumeInfo?.infoLink || ''
-        }));
-        setBooks(formatted);
-      } else {
-        setBooks(recommended);
-      }
+        }))
+        .slice(0, 40);
+      
+      setBooks(formatted);
     } catch (error) {
       console.error('Error loading recommendations:', error);
-      // Fallback to Google Books on error
-      try {
-        const query = [selectedMood, genre].filter(Boolean).join(' ') || 'fiction';
-        const googleBooks = await fetchBooks(query, 40);
-        const formatted = googleBooks.map(item => ({
-          id: item.id,
-          title: item.volumeInfo?.title || 'Untitled',
-          author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
-          authors: item.volumeInfo?.authors || [],
-          cover: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          description: item.volumeInfo?.description || '',
-          averageRating: item.volumeInfo?.averageRating || 0,
-          infoLink: item.volumeInfo?.infoLink || ''
-        }));
-        setBooks(formatted);
-      } catch (fallbackError) {
-        console.error('Google Books fallback also failed:', fallbackError);
-        setBooks([]);
-      }
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -208,10 +204,22 @@ export default function DiscoverPage({ userDataManager }) {
   return (
     <div className="discover-page max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
-          Discover Your Next Favorite Book
-        </h1>
+      <div className="mb-8">
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Discover Your Next Favorite Book
+          </h1>
+          <div className="flex items-center gap-3">
+            <GoogleSignInButton />
+            <button
+              aria-label="Toggle dark mode"
+              onClick={() => setDark(s => !s)}
+              className="px-3 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-sm"
+            >
+              {dark ? '🌙 Dark' : '☀️ Light'}
+            </button>
+          </div>
+        </div>
         <p className="text-lg text-slate-600">
           AI-powered recommendations based on your mood and preferences
         </p>

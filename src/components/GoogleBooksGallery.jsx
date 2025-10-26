@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import fetchBooks, { fetchBooksMany } from '../services/googleBooks';
 import apiService from '../services/api';
-import BookImage from './BookImage';
 import '../index.css';
 
 // Helpers to prefer Open Library covers when an ISBN is available (better coverage, fewer placeholders)
@@ -16,88 +15,86 @@ function openLibCoverUrl(isbn){
   return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
 }
 
-export default function GoogleBooksGallery({ userDataManager }) {
-  // Helper to record book to history
-  const recordHistory = (item) => {
-    try {
-      const info = item.volumeInfo || {};
-      const title = info.title || 'Untitled';
-      const authors = (info.authors || []).join(', ');
-      
-      // Get best cover
-      const isbn = getBestIsbn(info);
-      const openLib = openLibCoverUrl(isbn);
-      const googleThumb = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
-      const cover = openLib || (googleThumb ? googleThumb.replace(/^http:/, 'https:') : undefined);
-      
-      const entry = { id: item.id, title, authors, cover, infoLink: info.infoLink };
-      
-      if (userDataManager) {
-        const cur = userDataManager.getData('history', []) || [];
-        const next = [entry, ...cur.filter((h) => h.id !== item.id)].slice(0, 24);
-        userDataManager.saveData('history', next);
-      } else {
-        const raw = localStorage.getItem('vibesphere_guest_history');
-        const cur = raw ? JSON.parse(raw) : [];
-        const next = [entry, ...cur.filter((h) => h.id !== item.id)].slice(0, 24);
-        localStorage.setItem('vibesphere_guest_history', JSON.stringify(next));
-      }
-      // Dispatch custom event so RecentlyViewed component updates immediately
-      window.dispatchEvent(new CustomEvent('historyUpdated'));
-    } catch (e) {
-      console.error('Failed to record history:', e);
+// ExploreCover: renders a fixed-size cover frame (180x270) and handles missing/failed images.
+function ExploreCover({ primary, fallback, title }) {
+  const [current, setCurrent] = React.useState(primary || fallback || null);
+  const [failed, setFailed] = React.useState(false);
+
+  const placeholderSvg = encodeURIComponent(`
+    <svg xmlns='http://www.w3.org/2000/svg' width='1' height='1' viewBox='0 0 1 1' preserveAspectRatio='none'>
+      <defs>
+        <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
+          <stop offset='0' stop-color='%23ffffff'/>
+          <stop offset='1' stop-color='%23f4f4f4'/>
+        </linearGradient>
+      </defs>
+      <rect width='1' height='1' fill='url(#g)'/>
+    </svg>
+  `);
+
+  // If no src or a previous load failed, show the same placeholder used in the
+  // main tiles so Explore matches the site's visual style.
+  const handleError = (e) => {
+    if(current && primary && current === primary && fallback){
+      setCurrent(fallback);
+      return;
     }
+    setFailed(true);
+    // Hide this card completely when we have no valid image
+    try {
+      const card = e.currentTarget.closest('.book-tile');
+      if (card) card.style.display = 'none';
+    } catch(_) {}
   };
-  
+
+  if (!current || failed) {
+    return null;
+  }
+
+  return (
+    <div className="book-cover-wrap">
+      <img
+        className="book-cover book-cover--strict"
+        src={current}
+        alt={title}
+        onError={handleError}
+      />
+    </div>
+  );
+}
+
+export default function GoogleBooksGallery({ userDataManager }) {
   // Temporary blocklist to remove problematic or unwanted books from Explore
   // You can extend these lists with more titles or exact volume IDs.
   const BLOCKED = {
     titles: new Set([
       'bestsellers, 1979-1983',
+      'bestsellers',
       'bestsellers of the third reich',
     ]),
     ids: new Set([
       // Add volume IDs here to block by exact Google volume id
     ]),
   };
-  const [query, setQuery] = useState(''); // Empty by default - no auto-search
+  const [query, setQuery] = useState('bestsellers');
   const [items, setItems] = useState([]);
-  const [status, setStatus] = useState('Search for books, authors, or genres');
+  const [status, setStatus] = useState('Type a search and press Enter');
   const [favorites, setFavorites] = useState(userDataManager ? userDataManager.getData('favorites', []) : []);
   const [loading, setLoading] = useState(false);
   
 
   useEffect(()=>{
-    if (query && query.trim()) {
-      load(query);
-    }
+    load(query);
   },[]);
 
   function mapAuthorQuery(raw){
     const s = String(raw || '').trim();
-    
-    // Already formatted queries
-    if (s.startsWith('inauthor:') || s.startsWith('intitle:') || s.startsWith('subject:')) {
-      return s;
-    }
-    
-    // Explicit prefixes only
     const authorM = s.match(/^author\s*:\s*(.+)$/i);
     const byM = s.match(/^by\s+(.+)$/i);
     if (authorM) return `inauthor:${authorM[1]}`;
     if (byM) return `inauthor:${byM[1]}`;
-    
     const genreM = s.match(/^genre\s*:\s*(.+)$/i);
     if (genreM) return `subject:${genreM[1]}`;
-    
-    // Smart detection: if it looks like a person's name, treat as author
-    // (2-3 words, mostly letters, capitalized like "First Last" or "First Middle Last")
-    const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?\s*)?(\s+[A-Z][a-z]+){1,2}$/;
-    if (namePattern.test(s)) {
-      return `inauthor:${s}`;
-    }
-    
-    // Otherwise return as-is for general search (title, keywords)
     return s;
   }
 
@@ -106,78 +103,43 @@ export default function GoogleBooksGallery({ userDataManager }) {
     setItems([]);
     setLoading(true);
     try{
-      const target = 60;
+      // We want to show up to this many valid tiles after filtering
+      const target = 40;
+      // Fetch a larger pool so we can filter aggressively without empty spots
+      let pool = [];
       const mapped = mapAuthorQuery(q);
-      
-      // Detect search type
-      const isAuthorSearch = mapped.startsWith('inauthor:');
-      const isTitleSearch = mapped.startsWith('intitle:');
-      const searchAuthor = isAuthorSearch ? mapped.replace('inauthor:', '').trim().toLowerCase() : '';
-      const searchTitle = isTitleSearch ? mapped.replace('intitle:', '').trim().toLowerCase() : '';
-      const searchQuery = (!isAuthorSearch && !isTitleSearch) ? q.trim().toLowerCase() : '';
-      
-      console.log('🔍 Searching for:', q);
-      console.log('📝 Mapped query:', mapped);
-      
-      // Use Google Books API directly for best cover images and results
-      const pool = await fetchBooksMany(mapped || q, 200);
-      console.log('✅ Google Books returned:', pool.length, 'books');
-      
-      // Helpers for filtering
+      // Try backend first for caching and consistent cover filtering
+      try {
+        const fromApi = await apiService.recoSearch(mapped || 'bestsellers', 200);
+        if (Array.isArray(fromApi) && fromApi.length) {
+          // Convert backend format to Google-like items shape for minimal changes
+            pool = fromApi.map((b) => ({
+              id: b.id,
+              volumeInfo: {
+                title: b.title,
+                authors: b.authors,
+                description: b.description,
+                imageLinks: b.cover ? { thumbnail: b.cover, smallThumbnail: b.cover } : undefined,
+                industryIdentifiers: b.industryIdentifiers,
+                infoLink: b.infoLink
+              }
+            }));
+        }
+      } catch(e){
+        // ignore and fallback
+      }
+      if (!pool.length) {
+        pool = await fetchBooksMany(mapped || q, 200);
+      }
+
+      // Helpers used below for filtering
       const hasCover = (info) => {
         const isbn = getBestIsbn(info);
         const openLib = openLibCoverUrl(isbn);
         const g = info?.imageLinks?.thumbnail || info?.imageLinks?.smallThumbnail;
         return !!(openLib || g);
       };
-      
-      // Strict filtering for ALL search types
-      const matchesSearch = (item) => {
-        const info = item.volumeInfo || {};
-        
-        // Author search - strict author matching
-        if (isAuthorSearch && searchAuthor) {
-          const authors = info.authors || [];
-          return authors.some(author => {
-            const authorLower = String(author || '').toLowerCase();
-            const nameParts = searchAuthor.split(' ').filter(p => p.length > 2);
-            return authorLower.includes(searchAuthor) || 
-                   nameParts.every(part => authorLower.includes(part));
-          });
-        }
-        
-        // Title search - strict title matching
-        if (isTitleSearch && searchTitle) {
-          const title = String(info.title || '').toLowerCase();
-          const titleParts = searchTitle.split(' ').filter(p => p.length > 2);
-          return title.includes(searchTitle) || 
-                 titleParts.every(part => title.includes(part));
-        }
-        
-        // General search - more lenient matching for broader results
-        if (searchQuery) {
-          const title = String(info.title || '').toLowerCase();
-          const authors = (info.authors || []).join(' ').toLowerCase();
-          const description = String(info.description || '').toLowerCase();
-          
-          // For single word searches like "bestsellers", be more lenient
-          if (searchQuery.split(' ').length === 1) {
-            return title.includes(searchQuery) || 
-                   authors.includes(searchQuery) ||
-                   description.includes(searchQuery);
-          }
-          
-          // For multi-word searches, match parts in title or author
-          const queryParts = searchQuery.split(' ').filter(p => p.length > 2);
-          return title.includes(searchQuery) || 
-                 authors.includes(searchQuery) ||
-                 queryParts.some(part => title.includes(part) || authors.includes(part));
-        }
-        
-        return true;
-      };
 
-      // Filter and deduplicate
       const filtered = [];
       const seen = new Set();
       for (const item of pool) {
@@ -185,14 +147,31 @@ export default function GoogleBooksGallery({ userDataManager }) {
         const title = (info.title || '').trim().toLowerCase();
         if (BLOCKED.ids.has(item.id) || BLOCKED.titles.has(title)) continue;
         if (!hasCover(info)) continue;
-        if (!matchesSearch(item)) continue; // Strict filtering for ALL searches
         if (seen.has(item.id)) continue;
         seen.add(item.id);
         filtered.push(item);
         if (filtered.length >= target) break;
       }
 
-      console.log('📊 Final results:', filtered.length, 'books');
+      // If we didn't get enough results, try an author-focused fallback
+      if (filtered.length < target) {
+        try {
+          const authorPool = await fetchBooksMany(`inauthor:${q}`, 200);
+          for (const item of authorPool) {
+            const info = item.volumeInfo || {};
+            const title = (info.title || '').trim().toLowerCase();
+            if (BLOCKED.ids.has(item.id) || BLOCKED.titles.has(title)) continue;
+            if (!hasCover(info)) continue;
+            if (seen.has(item.id)) continue;
+            seen.add(item.id);
+            filtered.push(item);
+            if (filtered.length >= target) break;
+          }
+        } catch (e) {
+          // ignore author fallback failures
+        }
+      }
+
       setItems(filtered);
       setStatus(filtered.length ? `Showing ${filtered.length} results` : 'No results');
     }catch(e){
@@ -279,25 +258,24 @@ export default function GoogleBooksGallery({ userDataManager }) {
 
           const thumbHigh = normalizeGoogleThumb(thumb);
           const isbn = getBestIsbn(info);
+          const openLib = openLibCoverUrl(isbn);
 
-          // Always show books, even without covers (will use fallback)
+          // If neither Open Library nor Google provides a cover, skip rendering this tile.
+          if(!openLib && !thumbHigh){
+            return null;
+          }
+
           return (
             <div key={item.id} className="book-tile">
               <article className="book-card">
                 <div className="book-cover-wrap">
-                  <BookImage
-                    primaryUrl={thumbHigh}
-                    altIdentifiers={{ isbn }}
-                    title={title}
-                    author={authors}
-                    className="book-cover"
-                  />
+                  <ExploreCover primary={openLib} fallback={thumbHigh} title={title} />
                 </div>
                 <div className="book-info">
                   <h3 className="book-title">{title}</h3>
                   <p className="book-authors">{authors}</p>
                   <div className="card-footer">
-                    <a className="view-link" href={info.infoLink} target="_blank" rel="noopener noreferrer" onClick={() => recordHistory(item)}>View</a>
+                    <a className="view-link" href={info.infoLink} target="_blank" rel="noopener noreferrer">View</a>
                     {userDataManager && (
                       <button className="px-2 py-1 ml-2 text-pink-600" onClick={()=>toggleFavLocal(item)}>
                         {favorites.find((b)=>b.id===item.id) ? '💖' : '🤍'}

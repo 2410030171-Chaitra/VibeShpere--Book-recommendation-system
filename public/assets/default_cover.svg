@@ -6,6 +6,9 @@
     </linearGradient>
   </defs>
   <rect width="300" height="450" fill="url(#grad)"/>
-  <text x="150" y="200" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.8">📚</text>
-  <text x="150" y="240" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" opacity="0.6">No Cover Available</text>
+  <g transform="translate(0, -10)">
+    <circle cx="150" cy="160" r="44" fill="rgba(255,255,255,0.08)" />
+    <text x="150" y="170" font-family="Inter, Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" opacity="0.95">�</text>
+  </g>
+  <text x="150" y="400" font-family="Inter, Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" opacity="0.6">VibeSphere</text>
 </svg>

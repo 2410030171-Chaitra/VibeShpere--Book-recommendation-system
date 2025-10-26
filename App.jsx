@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import GoogleBooksGallery from "./src/components/GoogleBooksGallery.jsx";
+import DiscoverPage from "./src/components/DiscoverPage.jsx";
 import fetchBooks, { fetchBooksMany, isBlocked } from "./src/services/googleBooks.js";
 import apiService from "./src/services/api.js";
 import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
@@ -876,6 +877,7 @@ function TopNav({ user, onRoute, route, onLogout, theme, onToggleTheme }) {
           {[
             ["dashboard", "🏠 Home"],
             ["explore", "🔎 Explore"],
+            ["discover", "✨ Discover"],
             ["favorites", "💖 Favorites"],
             ["library", "📚 Library"],
             ["profile", "👤 Profile"],
@@ -1919,6 +1921,9 @@ export default function App() {
               setRatings={setRatings}
               userDataManager={userDataManager}
             />
+          )}
+          {route === "discover" && (
+            <DiscoverPage userDataManager={userDataManager} />
           )}
           {route === "explore" && (
             <GoogleBooksGallery userDataManager={userDataManager} />

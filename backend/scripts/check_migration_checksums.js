@@ -62,15 +62,16 @@ function fileChecksum(content) {
       process.exit(0);
     }
 
-    console.log('\n=== WARNING: Detected modified migration files ===');
+    console.log('\n=== ERROR: Detected modified migration files ===');
     mismatches.forEach(m => {
       console.log('\nMigration:', m.file);
       console.log('  recorded checksum:', m.recorded);
       console.log('  current  checksum:', m.checksum);
     });
-    console.log('\nThis pre-commit hook is only a warning. Do NOT edit applied migrations; instead create a new migration file.');
+    console.log('\nEditing applied migrations is not allowed. Create a new migration file instead.');
     conn.release();
-    process.exit(0);
+    // Exit non-zero so the pre-commit hook blocks the commit
+    process.exit(1);
   } catch (err) {
     console.log('[migrations-check] Unexpected error (non-blocking):', err && err.message);
     process.exit(0);

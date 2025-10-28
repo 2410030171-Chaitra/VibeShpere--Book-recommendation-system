@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run migration checksum check as a warning (do not block commit)
+node backend/scripts/check_migration_checksums.js || true

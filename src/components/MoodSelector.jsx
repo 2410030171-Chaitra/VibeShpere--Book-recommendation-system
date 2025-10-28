@@ -2,19 +2,22 @@ import React from 'react';
 
 const MOODS = [
   { id: 'happy', label: 'Happy', emoji: '😊' },
-  { id: 'sad', label: 'Melancholy', emoji: '😌' },
-  { id: 'romantic', label: 'Romantic', emoji: '💕' },
-  { id: 'adventurous', label: 'Adventurous', emoji: '🚀' },
-  { id: 'cozy', label: 'Cozy', emoji: '☕' },
-  { id: 'dark', label: 'Dark', emoji: '🌑' },
+  { id: 'romantic', label: 'Romantic', emoji: '�' },
+  { id: 'adventurous', label: 'Adventurous', emoji: '�️' },
+  { id: 'mysterious', label: 'Mysterious', emoji: '�' },
   { id: 'inspiring', label: 'Inspiring', emoji: '✨' },
+  { id: 'reflective', label: 'Reflective', emoji: '🌧️' },
+  { id: 'calm', label: 'Calm', emoji: '🫧', subtitle: 'Peaceful & cozy reads' },
+  { id: 'dark', label: 'Dark', emoji: '🌑' },
+  { id: 'fantastical', label: 'Fantastical', emoji: '🧙' },
+  { id: 'thoughtful', label: 'Thoughtful', emoji: '☁️' }
 ];
 
 export default function MoodSelector({ selectedMood, onMoodChange }) {
   return (
     <div>
       <h3 className="text-lg font-semibold text-slate-800 mb-3">🎧 Choose a mood</h3>
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {MOODS.map(m => {
           const active = selectedMood === m.id;
           return (
@@ -22,17 +25,25 @@ export default function MoodSelector({ selectedMood, onMoodChange }) {
               key={m.id}
               onClick={() => onMoodChange(active ? null : m.id)}
               className={
-                `px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 inline-flex items-center gap-2 focus:outline-none ${active ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`
+                `relative p-6 rounded-2xl text-left transition-all duration-200 focus:outline-none shadow-sm ${active ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-white shadow-2xl scale-102' : 'bg-white text-slate-800 hover:shadow-lg'}`
               }
               aria-pressed={active}
             >
-              <span className="text-lg">{m.emoji}</span>
-              <span>{m.label}</span>
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">{m.emoji}</div>
+                <div>
+                  <div className="font-semibold text-base">{m.label}</div>
+                  {m.subtitle && <div className="text-xs opacity-80 mt-1">{m.subtitle}</div>}
+                </div>
+              </div>
+              {active && (
+                <span className="absolute top-3 right-3 w-4 h-4 bg-white rounded-full shadow-md" />
+              )}
             </button>
           );
         })}
       </div>
-      <p className="mt-3 text-sm text-slate-500">Pick a mood to get tailored recommendations. Click again to clear.</p>
+      <p className="mt-3 text-sm text-slate-500">Pick a mood to get tailored recommendations.</p>
     </div>
   );
 }

@@ -12,11 +12,13 @@
     "dev:full": "concurrently \"npm run backend\" \"npm run dev\"",
     "install:backend": "cd backend && npm install"
   },
+  "prepare": "husky install",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "husky": "^8.0.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",

@@ -1914,13 +1914,17 @@ export default function App() {
 
         <main>
           {route === "dashboard" && (
-            <Dashboard 
-              user={user} 
-              setUser={setUser} 
-              ratings={ratings} 
-              setRatings={setRatings}
-              userDataManager={userDataManager}
-            />
+            <>
+              <Dashboard 
+                user={user} 
+                setUser={setUser} 
+                ratings={ratings} 
+                setRatings={setRatings}
+                userDataManager={userDataManager}
+              />
+              {/* Restore previous behavior: show Discover immediately after Home/Dashboard */}
+              <DiscoverPage userDataManager={userDataManager} />
+            </>
           )}
           {route === "discover" && (
             <DiscoverPage userDataManager={userDataManager} />

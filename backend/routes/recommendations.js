@@ -18,6 +18,19 @@ function setCached(key, v){ cache.set(key, { t: Date.now(), v }); }
 
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes?q=';
 
+// Helper: fetch with timeout using AbortController to avoid hanging requests
+const DEFAULT_FETCH_TIMEOUT_MS = 8000; // 8s
+async function fetchWithTimeout(url, opts = {}, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 function normalizeImage(url){
   if(!url) return null;
   try { return url.replace(/^http:/,'https:'); } catch(e){ return url; }
@@ -62,8 +75,12 @@ function cleanItem(item){
 
 async function fetchPage(q, startIndex=0, max=40){
   const url = API_BASE + encodeURIComponent(q) + `&startIndex=${startIndex}&maxResults=${max}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('Upstream error');
+  console.log(`[fetchPage] fetching ${url}`);
+  const res = await fetchWithTimeout(url);
+  if(!res.ok) {
+    console.error(`[fetchPage] upstream not ok ${res.status} ${res.statusText} for ${url}`);
+    throw new Error('Upstream error');
+  }
   const json = await res.json();
   return (json.items || []);
 }
@@ -80,8 +97,12 @@ async function fetchMany(q, total=120){
 async function fetchOpenLibrarySearch(q, limit = 100){
   try {
     const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limit}`;
-    const res = await fetch(url);
-    if(!res.ok) return [];
+    console.log(`[fetchOpenLibrarySearch] ${url}`);
+    const res = await fetchWithTimeout(url);
+    if(!res.ok) {
+      console.error('[fetchOpenLibrarySearch] openlibrary responded with', res.status);
+      return [];
+    }
     const json = await res.json();
     return (json.docs || []).map(d => {
       const cover = d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null;
@@ -98,6 +119,7 @@ async function fetchOpenLibrarySearch(q, limit = 100){
       };
     }).filter(b => !!b.cover);
   } catch (e) {
+    console.error('[fetchOpenLibrarySearch] error', e && e.message);
     return [];
   }
 }
@@ -128,8 +150,12 @@ router.get('/trending', async (req, res) => {
     async function fetchOpenLibrary(limit) {
       const url = `https://openlibrary.org/subjects/bestsellers.json?limit=${limit}`;
       try {
-        const res = await fetch(url);
-        if (!res.ok) return [];
+        console.log(`[trending.fetchOpenLibrary] ${url}`);
+        const res = await fetchWithTimeout(url);
+        if (!res.ok) {
+          console.error('[trending.fetchOpenLibrary] upstream error', res.status);
+          return [];
+        }
         const json = await res.json();
         const adultKeywords = [
           'erotica', 'adult', 'explicit', '18+', 'nsfw', 'sex', 'sexual', 'porn', 'xxx', 'mature', 'smut', 'r18', 'r-18', 'bdsm', 'fetish', 'taboo', 'incest', 'hentai', 'yaoi', 'yuri', 'lgbt erotica', 'gay erotica', 'lesbian erotica'
@@ -150,7 +176,7 @@ router.get('/trending', async (req, res) => {
       }
     }
 
-    const openLibBooks = await fetchOpenLibrary(limit);
+  const openLibBooks = await fetchOpenLibrary(limit);
 
     // Merge and deduplicate by title+author
     const allBooks = [...googleCleaned, ...openLibBooks];
@@ -214,9 +240,19 @@ router.get('/discover', async (req, res) => {
     const c = getCached(key); if(c) return res.json(c);
 
     // Fetch candidates from Google Books and Open Library in parallel
+    console.log('[discover] query=', q, 'limit=', lim);
     const googlePromise = fetchMany(q, Math.max(lim*3, 120));
     const openLibPromise = fetchOpenLibrarySearch(`${mood} ${genre}`.trim(), Math.max(lim*2, 80));
-    const [googlePool, openLibBooks] = await Promise.all([googlePromise, openLibPromise]);
+    let googlePool = [];
+    let openLibBooks = [];
+    try {
+      [googlePool, openLibBooks] = await Promise.all([googlePromise, openLibPromise]);
+    } catch (err) {
+      console.error('[discover] upstream fetch error', err && err.message);
+      // continue with whatever completed or empty arrays
+      googlePool = googlePool || [];
+      openLibBooks = openLibBooks || [];
+    }
 
     const candidates = [];
     // Clean Google items

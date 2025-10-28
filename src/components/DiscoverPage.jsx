@@ -25,6 +25,46 @@ const GENRES = [
 ];
 
 export default function DiscoverPage({ userDataManager }) {
+  // Local fallback dataset used when remote calls fail or time out.
+  const SAMPLE_BOOKS = [
+    {
+      id: 'sample-1',
+      title: 'The Little Guide to Joy',
+      author: 'A. Reader',
+      authors: ['A. Reader'],
+      cover: '/assets/default_cover.svg',
+      thumbnail: '/assets/default_cover.svg',
+      description: 'A short, uplifting collection of essays and micro-stories to brighten your day.',
+      averageRating: 4.5,
+      infoLink: '#'
+    },
+    {
+      id: 'sample-2',
+      title: 'Mysteries of the Nightfall',
+      author: 'S. Noir',
+      authors: ['S. Noir'],
+      cover: '/assets/default_cover.svg',
+      thumbnail: '/assets/default_cover.svg',
+      description: 'A gripping mystery that explores secrets hidden in a small town.',
+      averageRating: 4.2,
+      infoLink: '#'
+    },
+    {
+      id: 'sample-3',
+      title: 'Spaceways: A Beginner\'s Guide to the Stars',
+      author: 'C. Astro',
+      authors: ['C. Astro'],
+      cover: '/assets/default_cover.svg',
+      thumbnail: '/assets/default_cover.svg',
+      description: 'An accessible and fun introduction to the wonders of space and science fiction.',
+      averageRating: 4.7,
+      infoLink: '#'
+    }
+  ];
+
+  const [fallbackActive, setFallbackActive] = useState(false);
+  // When true, show only the recommendations area (hide mood grid / trending)
+  const [showOnlyRecommendations, setShowOnlyRecommendations] = useState(false);
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [books, setBooks] = useState([]);
@@ -93,6 +133,16 @@ export default function DiscoverPage({ userDataManager }) {
     }
   }, [selectedMood, selectedGenre]);
 
+  // If a mood or a non-default genre is active, switch into "show only"
+  // recommendations mode so unrelated UI is hidden (matches requested UX).
+  useEffect(() => {
+    if (selectedMood || (selectedGenre && selectedGenre !== 'all')) {
+      setShowOnlyRecommendations(true);
+    } else {
+      setShowOnlyRecommendations(false);
+    }
+  }, [selectedMood, selectedGenre]);
+
   async function loadTrendingBooks() {
     try {
       setLoadingTrending(true);
@@ -121,10 +171,18 @@ export default function DiscoverPage({ userDataManager }) {
         }))
         .slice(0, 20);
       
-      setTrendingBooks(formatted);
+      if (!formatted || formatted.length === 0) {
+        // activate fallback when upstream returned no usable items
+        setFallbackActive(true);
+        setTrendingBooks(SAMPLE_BOOKS.slice(0, 10));
+      } else {
+        setTrendingBooks(formatted);
+      }
     } catch (error) {
       console.error('Error loading trending books:', error);
-      setTrendingBooks([]);
+      // On error, enable client-side fallback so the page remains useful
+      setFallbackActive(true);
+      setTrendingBooks(SAMPLE_BOOKS.slice(0, 10));
     } finally {
       setLoadingTrending(false);
     }
@@ -168,10 +226,16 @@ export default function DiscoverPage({ userDataManager }) {
         }))
         .slice(0, 40);
       
-      setBooks(formatted);
+      if (!formatted || formatted.length === 0) {
+        setFallbackActive(true);
+        setBooks(SAMPLE_BOOKS.slice(0, 20));
+      } else {
+        setBooks(formatted);
+      }
     } catch (error) {
       console.error('Error loading recommendations:', error);
-      setBooks([]);
+      setFallbackActive(true);
+      setBooks(SAMPLE_BOOKS.slice(0, 20));
     } finally {
       setLoading(false);
     }
@@ -223,47 +287,80 @@ export default function DiscoverPage({ userDataManager }) {
         <p className="text-lg text-slate-600">
           AI-powered recommendations based on your mood and preferences
         </p>
+        {fallbackActive && (
+          <div className="mt-4 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800">
+            You're seeing fallback recommendations because remote data couldn't be loaded. This is temporary — the live recommender will show here when available.
+          </div>
+        )}
       </div>
 
-      {/* Mood Selector */}
-      <div className="modern-card p-6 mb-8">
-        <MoodSelector
-          selectedMood={selectedMood}
-          onMoodChange={setSelectedMood}
-        />
-      </div>
+      {/* Mood Selector (hide when compact "show only" mode is active) */}
+      {!showOnlyRecommendations && (
+        <div className="modern-card p-6 mb-8">
+          <MoodSelector
+            selectedMood={selectedMood}
+            onMoodChange={(m) => { setSelectedMood(m); setSelectedGenre('all'); }}
+          />
+        </div>
+      )}
+
+      {/* Clear mood selection link shown when a mood is active */}
+      {selectedMood && (
+        <div className="text-center mb-6">
+          <button
+            className="text-sm text-indigo-600 hover:underline"
+            onClick={() => { setSelectedMood(null); setShowOnlyRecommendations(false); }}
+          >
+            Clear mood selection
+          </button>
+        </div>
+      )}
 
       {/* Genre Filter */}
       <div className="modern-card p-6 mb-8">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">
-          📚 Filter by Genre
-        </h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <span className="text-2xl">📚</span>
+            <span>Filter by Genre</span>
+          </h3>
+        </div>
+        <div className="flex flex-wrap gap-3">
           {GENRES.map(genre => (
             <button
               key={genre.id}
-              onClick={() => setSelectedGenre(genre.id)}
+              onClick={() => { setSelectedGenre(genre.id); setShowOnlyRecommendations(true); setSelectedMood(null); }}
               className={`
-                px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+                px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2
                 ${selectedGenre === genre.id
                   ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:scale-105'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }
               `}
             >
-              <span className="mr-2">{genre.emoji}</span>
-              {genre.label}
+              <span className="text-lg">{genre.emoji}</span>
+              <span>{genre.label}</span>
             </button>
           ))}
         </div>
+        {showOnlyRecommendations && (
+          <div className="mt-4">
+            <button
+              className="text-sm text-indigo-600 hover:underline"
+              onClick={() => { setSelectedGenre('all'); setSelectedMood(null); setShowOnlyRecommendations(false); }}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Recommendations Section */}
       {(selectedMood || selectedGenre !== 'all') && (
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-800">
-              {selectedMood ? `📚 ${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)} Reads` : '📚 Recommendations'}
+            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+              <span className="text-2xl">📚</span>
+              <span>{selectedMood ? `${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)} Reads` : 'Recommendations'}</span>
             </h2>
             <span className="text-sm text-slate-500">
               {books.length} books found
@@ -285,17 +382,19 @@ export default function DiscoverPage({ userDataManager }) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 modern-card">
-              <p className="text-slate-500 text-lg">
+            <div className="text-center modern-card rounded-2xl py-20 px-6">
+              <p className="text-slate-500 text-xl md:text-2xl">
                 No books found for this combination. Try a different mood or genre!
               </p>
+              <div className="mt-4 text-sm text-slate-400">0 books found</div>
             </div>
           )}
         </div>
       )}
 
-      {/* Trending Books Section */}
-      <div className="mb-12">
+      {/* Trending Books Section (hidden when compact "show only" mode is active) */}
+      {!showOnlyRecommendations && (
+        <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-slate-800">
             🔥 Currently Trending
@@ -317,7 +416,8 @@ export default function DiscoverPage({ userDataManager }) {
             ))}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

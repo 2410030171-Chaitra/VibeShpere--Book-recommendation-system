@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const connectMongoIfEnabled = require('./config/mongodb');
 const path = require('path');
 const fs = require('fs');
@@ -16,6 +17,14 @@ const ratingsRoutes = require('./routes/ratings');
 const libraryRoutes = require('./routes/library');
 const adminRoutes = require('./routes/admin');
 const favoritesRoutes = require('./routes/favorites');
+
+// Ensure we always have a JWT secret so the server can start even if env is missing.
+// In production, you should set JWT_SECRET explicitly to keep tokens stable across restarts.
+if (!process.env.JWT_SECRET || /your_super_secret_jwt_key_here/i.test(String(process.env.JWT_SECRET))) {
+  const ephemeral = crypto.randomBytes(48).toString('hex');
+  process.env.JWT_SECRET = ephemeral;
+  console.warn('[WARN] JWT_SECRET not provided. Generated ephemeral secret for this process. Set JWT_SECRET in your environment to persist tokens across restarts.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;

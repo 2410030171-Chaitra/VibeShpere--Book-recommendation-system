@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test:e2e": "npx playwright test --config=playwright.config.cjs",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview --host 0.0.0.0",
     "backend": "cd backend && npm run dev",
@@ -14,11 +15,12 @@
   },
   "prepare": "husky install",
   "dependencies": {
+    "firebase": "^9.23.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "husky": "^8.0.0",
+    "@playwright/test": "^1.38.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
@@ -28,6 +30,8 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^8.0.0",
+    "playwright": "^1.38.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
     "vite": "^5.0.8"

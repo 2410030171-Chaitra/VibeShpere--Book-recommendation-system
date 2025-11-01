@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React from 'react';
 
 export default class ErrorBoundary extends React.Component {
@@ -27,8 +28,8 @@ export default class ErrorBoundary extends React.Component {
           <details style={{ whiteSpace: 'pre-wrap', marginTop: 12 }}>
             {this.state.error && (this.state.error.stack || String(this.state.error))}
           </details>
-          <div style={{ marginTop: 12 }}>
-            <button onClick={() => { try { localStorage.removeItem('vibesphere_last_error'); } catch(e){} window.location.reload(); }}>Reload</button>
+            <div style={{ marginTop: 12 }}>
+            <button onClick={() => { try { localStorage.removeItem('vibesphere_last_error'); } catch(e) { /* ignore */ } window.location.reload(); }}>Reload</button>
           </div>
         </div>
       );

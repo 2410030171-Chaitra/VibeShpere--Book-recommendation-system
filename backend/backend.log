@@ -1,7 +1,9 @@
-(node:1970) [MONGODB DRIVER] Warning: useNewUrlParser is a deprecated option: useNewUrlParser has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:1970) [MONGODB DRIVER] Warning: useUnifiedTopology is a deprecated option: useUnifiedTopology has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
 ✅ MongoDB connected successfully
 🚀 VibeSphere API server running on http://localhost:3001
 🌍 Also accessible from network at http://0.0.0.0:3001
 📚 API endpoints available at http://localhost:3001/api
+[REQ] 2025-10-29T16:30:31.443Z GET /api/recommendations/trending?limit=5 from 127.0.0.1
+[fetchPage] fetching https://www.googleapis.com/books/v1/volumes?q=bestsellers%20OR%20subject%3Afiction%20OR%20intitle%3Anovel&startIndex=0&maxResults=40
+[fetchPage] fetching https://www.googleapis.com/books/v1/volumes?q=bestsellers%20OR%20subject%3Afiction%20OR%20intitle%3Anovel&startIndex=40&maxResults=40
+[trending.fetchOpenLibrary] https://openlibrary.org/subjects/bestsellers.json?limit=5
+[RES] 2025-10-29T16:30:37.533Z GET /api/recommendations/trending?limit=5 -> 200 (6090ms)

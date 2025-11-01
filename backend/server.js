@@ -1,7 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/mongodb');
+const connectMongoIfEnabled = require('./config/mongodb');
+const { testConnection: testMySQLConnection, pool } = require('./config/database');
 // ...existing imports...
 
 // Import routes
@@ -15,12 +16,16 @@ const adminRoutes = require('./routes/admin');
 const favoritesRoutes = require('./routes/favorites');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
+// Disable ETag to avoid 304 Not Modified responses that can confuse JSON clients
+app.set('etag', false);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Ensure dynamic API responses are not cached by the browser/proxies
+app.use((_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
 // Simple request/response logger to help debug timeouts
 app.use((req, res, next) => {
@@ -49,12 +54,25 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoritesRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+// Health check endpoint (includes DB probe)
+app.get('/api/health', async (req, res) => {
+  async function checkDB() {
+    try {
+      const conn = await pool.getConnection();
+      await conn.query('SELECT 1');
+      conn.release();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  const dbStatus = await checkDB();
+  res.status(200).json({
+    status: 'OK',
     message: 'VibeSphere API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    db: dbStatus
   });
 });
 
@@ -78,8 +96,9 @@ app.use('*', (req, res) => {
 // Start server
 async function startServer() {
   try {
-    // Connect to MongoDB
-    await connectDB();
+    // Optional: try Mongo (non-fatal) and verify MySQL connectivity
+    await connectMongoIfEnabled();
+    await testMySQLConnection();
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 VibeSphere API server running on http://localhost:${PORT}`);

@@ -21,7 +21,7 @@ npm run prepare
 What the pre-commit hook does
 - The hook runs `node backend/scripts/check_migration_checksums.js` before commit.
 - The script compares SHA-256 checksums of SQL files in `backend/migrations/` with the stored checksums in the database `migrations` table.
-- If any applied migration file was modified after being applied, the script prints a clear warning listing the mismatches. The hook is non-blocking by default (it prints warnings but still allows the commit). CI will fail on such mismatches.
+- If any applied migration file was modified after being applied, the script prints a clear error listing the mismatches and will block the commit. CI will also fail on such mismatches.
 
 Why this matters
 - Editing migration files after they have been applied can create inconsistencies between environments and make rollbacks and debugging hard. The pre-commit warning + CI check helps enforce the practice of creating new migrations instead of editing applied ones.

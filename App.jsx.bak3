@@ -2,8 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import GoogleBooksGallery from "./src/components/GoogleBooksGallery.jsx";
 import DiscoverPage from "./src/components/DiscoverPage.jsx";
 import GoogleSignInButton from "./src/components/GoogleSignInButton.jsx";
-import fetchBooks, { fetchBooksMany, isBlocked } from "./src/services/googleBooks.js";
-import { getTrendingBooks, getSavedPreferences } from "./src/services/recommendations.js";
+import fetchBooks, { fetchBooksMany } from "./src/services/googleBooks.js";
 import apiService from "./src/services/api.js";
 import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
 
@@ -25,10 +24,11 @@ function CoverImage({ src, title, author, className, alt, style, loading = 'lazy
     return () => { isMounted.current = false; };
   }, []);
 
-  // Strategy:
-  // - If src is a real remote URL (http/https), optimistically show it immediately
-  //   to avoid any delay; rely on onError to recover.
-  // - If src is missing/local/data-URL, show placeholder and try Google → Open Library.
+  // Proactively validate the provided src using a temporary Image() so we can
+  // show the SVG placeholder immediately and only swap to the remote image
+  // once we've verified it loads successfully. This avoids rendering a
+  // broken image tag in the DOM and gives us a chance to attempt Google Books
+  // lookup before settling on the placeholder.
   React.useEffect(() => {
     let cancelled = false;
     let timer = null;
@@ -38,27 +38,69 @@ function CoverImage({ src, title, author, className, alt, style, loading = 'lazy
       setCoverSrc(svgPlaceholder(title, author));
     }
 
-    // If no usable src (missing, local asset path, or data URL), show placeholder
-    // and attempt to find a better remote cover from Google or Open Library.
-    const looksLocal = !src || /^\/?assets\//.test(src) || String(src).startsWith('data:');
-    if (!src || looksLocal) {
-      (async () => {
-        await setPlaceholder();
-        try {
-          const g = await fetchGoogleThumbnail(title, author);
-          if (!cancelled && isMounted.current && g) { setCoverSrc(g); return; }
-          const ol = await fetchOpenLibraryCover(title, author);
-          if (!cancelled && isMounted.current && ol) { setCoverSrc(ol); return; }
-        } catch (e) { /* ignore */ }
-      })();
+    // If no src provided, immediately show placeholder
+    if (!src) {
+      setPlaceholder();
       return () => { cancelled = true; if (timer) clearTimeout(timer); };
     }
 
-    // For remote http(s) sources, render immediately (fast) and rely on onError
-    // to repair if the image is broken.
-    setCoverSrc(src.replace(/^http:/, 'https:'));
-    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+    // Start by showing the placeholder while we validate the url.
+    setCoverSrc(svgPlaceholder(title, author));
 
+    const img = new Image();
+    // Avoid tainting canvas; we don't need crossOrigin for load detection, but set it if server allows
+    try { img.crossOrigin = 'anonymous'; } catch (e) {}
+
+    const timeoutMs = 8000;
+    let timedOut = false;
+
+    const onLoad = async () => {
+      if (cancelled || !isMounted.current) return;
+      if (img.naturalWidth && img.naturalWidth < 120) {
+        // low-res; try Google Books for a better image
+        const g = await fetchGoogleThumbnail(title, author);
+        if (g && isMounted.current && !cancelled) {
+          setCoverSrc(g);
+          return;
+        }
+      }
+      if (isMounted.current && !cancelled) setCoverSrc(src);
+    };
+
+    const onError = async () => {
+      if (cancelled || !isMounted.current) return;
+      // Try Google Books before using placeholder
+      try {
+        const g = await fetchGoogleThumbnail(title, author);
+        if (g && isMounted.current && !cancelled) {
+          setCoverSrc(g);
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
+      if (isMounted.current && !cancelled) setCoverSrc(svgPlaceholder(title, author));
+    };
+
+    img.onload = onLoad;
+    img.onerror = onError;
+    // Start timeout to fail fast
+    timer = setTimeout(() => {
+      timedOut = true;
+      // if timed out, treat as error
+      onError();
+    }, timeoutMs);
+
+    // Kick off load (use https if possible)
+    const startUrl = src.replace(/^http:/, 'https:');
+    img.src = startUrl;
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+      if (timer) clearTimeout(timer);
+    };
   }, [src, title, author]);
 
   // Keep the DOM <img> as a final safety net (onError/onLoad) for cases where
@@ -70,11 +112,6 @@ function CoverImage({ src, title, author, className, alt, style, loading = 'lazy
       const g = await fetchGoogleThumbnail(title, author);
       if (g) {
         e.currentTarget.src = g;
-        return;
-      }
-      const ol = await fetchOpenLibraryCover(title, author);
-      if (ol) {
-        e.currentTarget.src = ol;
         return;
       }
     } catch (err) {
@@ -96,9 +133,7 @@ function CoverImage({ src, title, author, className, alt, style, loading = 'lazy
           const imgEl = ev.currentTarget;
           if (imgEl.naturalWidth && imgEl.naturalWidth < 120) {
             const g2 = await fetchGoogleThumbnail(title, author);
-            if (g2 && g2 !== imgEl.src) { imgEl.src = g2; return; }
-            const ol2 = await fetchOpenLibraryCover(title, author);
-            if (ol2 && ol2 !== imgEl.src) { imgEl.src = ol2; return; }
+            if (g2 && g2 !== imgEl.src) imgEl.src = g2;
           }
         } catch (e) {
           // ignore
@@ -129,7 +164,7 @@ function svgPlaceholder(title = '', subtitle = '') {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-  // Try to fetch a thumbnail from Google Books for a given title/author. Returns thumbnail URL or null.
+// Try to fetch a thumbnail from Google Books for a given title/author. Returns thumbnail URL or null.
 async function fetchGoogleThumbnail(title = '', author = '') {
   try {
     // Use the centralized fetchBooks helper which already filters out mature/adult
@@ -147,29 +182,6 @@ async function fetchGoogleThumbnail(title = '', author = '') {
   }
 }
 
-// Try to fetch a high-quality cover from Open Library by title/author. Returns URL or null.
-async function fetchOpenLibraryCover(title = '', author = '') {
-  try {
-    const params = new URLSearchParams();
-    if (title) params.set('title', title);
-    if (author) params.set('author', author);
-    params.set('limit', '1');
-    const url = `https://openlibrary.org/search.json?${params.toString()}`;
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 2500);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const doc = (json && json.docs && json.docs[0]) || null;
-    const coverId = doc && doc.cover_i;
-    if (!coverId) return null;
-    return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
-  } catch (e) {
-    return null;
-  }
-}
-
 // Shared handler used when an img fails to load. It will attempt Google Books lookup,
 // then fallback to an SVG placeholder.
 function handleImageErrorFactory(title, author) {
@@ -180,11 +192,6 @@ function handleImageErrorFactory(title, author) {
       const g = await fetchGoogleThumbnail(title, author);
       if (g) {
         e.currentTarget.src = g;
-        return;
-      }
-      const ol = await fetchOpenLibraryCover(title, author);
-      if (ol) {
-        e.currentTarget.src = ol;
         return;
       }
     } catch (err) {
@@ -214,55 +221,12 @@ function GoogleBookTile({ item, userDataManager }) {
   const title = info.title || 'Untitled';
   const authors = (info.authors || []).join(', ');
   const googleThumbRaw = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || null;
-  // Normalize to https; only apply Google Books zoom param on Google-hosted thumbnails
-  function normalizeThumb(url){
-    if (!url) return null;
-    let u = url.replace(/^http:/, 'https:').replace(/&edge=curl/g, '');
-    try {
-      const isGoogle = /books\.googleusercontent\.com|googleapis\.com/.test(u);
-      if (isGoogle) {
-        if (/zoom=\d+/.test(u)) u = u.replace(/(zoom=)\d+/, '$11');
-        else u += (u.includes('?') ? '&' : '?') + 'zoom=1';
-      }
-    } catch (_) {}
-    return u;
-  }
-  const googleThumb = normalizeThumb(googleThumbRaw) || '/assets/default_cover.svg';
-  // Hide any runtime-blocked titles (centralized blacklist)
-  try {
-    if (isBlocked && isBlocked(item)) return null;
-  } catch (e) {
-    // ignore if helper not available
-  }
-  
-  // Relaxed: Always render; if no valid thumbnail, use a placeholder
+  // Ensure https and add zoom parameter for better quality
+  const googleThumb = googleThumbRaw ? googleThumbRaw.replace(/^http:/, 'https:').replace(/&edge=curl/g, '').replace(/zoom=\d+/, 'zoom=1') + (googleThumbRaw.includes('?') ? '&zoom=1' : '?zoom=1') : null;
+  // STRICT: if there's no valid Google thumbnail, don't render this tile at all
+  if (!googleThumb) return null;
 
   const [visible, setVisible] = React.useState(true);
-
-  // Save to Recently Viewed when user clicks View
-  function recordHistory() {
-    try {
-      const entry = {
-        id: item.id,
-        title,
-        authors,
-        cover: googleThumb,
-        infoLink: info.infoLink
-      };
-      if (userDataManager) {
-        const cur = userDataManager.getData('history', []) || [];
-        const next = [entry, ...cur.filter(h => h.id !== item.id)].slice(0, 24);
-        userDataManager.saveData('history', next);
-      } else {
-        const raw = localStorage.getItem('vibesphere_guest_history');
-        const cur = raw ? JSON.parse(raw) : [];
-        const next = [entry, ...cur.filter(h => h.id !== item.id)].slice(0, 24);
-        localStorage.setItem('vibesphere_guest_history', JSON.stringify(next));
-      }
-      window.dispatchEvent(new CustomEvent('historyUpdated'));
-    } catch (_) {}
-  }
-
   if (!visible) return null;
 
   return (
@@ -270,13 +234,20 @@ function GoogleBookTile({ item, userDataManager }) {
       <div className="book-tile">
         <article className="book-card">
           <div className="book-cover-wrap">
-            <CoverImage
+            <img
               className="book-cover book-cover--strict"
               src={googleThumb}
-              title={title}
-              author={authors}
               alt={`${title} cover`}
               loading="eager"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                // Hide tile if the strict Google thumbnail can't load
+                setVisible(false);
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', title);
+              }}
             />
           </div>
           <div className="book-info">
@@ -797,8 +768,7 @@ function Auth({ onAuth }) {
       id,
       name: name || email.split("@")[0],
       email,
-      // no default saved preferences — user opts in later
-      favoriteGenres: [],
+      favoriteGenres: ["Mystery", "Romance"], // default; user can edit later
       historyTags: ["witty", "twist"],
       timeBudgetHours: 6,
     };
@@ -1337,33 +1307,23 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
       try {
         setLoadingHome(true);
         
-        // Helper: collect items and ensure a usable cover (prefer Google; fallback to Open Library via ISBN)
+        // Helper: collect items - NO FILTERS, show all books from Google
         const collectValid = async (query, target = 20) => {
-          const pool = await fetchBooksMany(query, 200);
-          const out = [];
-          const seen = new Set();
-          for (const it of (pool || [])) {
-            if (!it || !it.id || seen.has(it.id)) continue;
-            const info = it.volumeInfo || {};
-            let thumb = info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail);
-            if (!thumb) {
-              const isbn = getBestIsbn(info);
-              const ol = openLibCoverUrl(isbn);
-              if (ol) {
-                info.imageLinks = { thumbnail: ol, smallThumbnail: ol };
-                thumb = ol;
-              }
+          try {
+            const pool = await fetchBooksMany(query, 200);
+            const picked = [];
+            for (const item of (pool || [])) {
+              picked.push(item);
+              if (picked.length >= target) break;
             }
-            // Accept item even if the image might fail at runtime; tile will fallback to placeholder
-            seen.add(it.id);
-            out.push({ ...it, volumeInfo: info });
-            if (out.length >= target) break;
+            return picked;
+          } catch (e) {
+            console.error('collectValid error:', e);
+            return [];
           }
-          return out;
         };
 
-        // De-duplicate by id while preserving order
-        const dedupeById = (arr = []) => {
+        const dedupeById = (arr) => {
           const seen = new Set();
           const out = [];
           for (const it of arr) {
@@ -1387,137 +1347,50 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
               result.push(it);
             }
           }
-          return result.slice(0, target);
+          return dedupeById(result).slice(0, target);
         };
 
-        // Fetch Trending (country-aware) from backend and adapt to Google Books-like shape for tiles
-        let tops = [];
-        try {
-          const country = (user && user.country) ? String(user.country) : '';
-          const backendTop = await getTrendingBooks({ limit: 20, country });
-          // Normalize to the shape expected by GoogleBookTile (volumeInfo with imageLinks)
-          tops = (backendTop || [])
-            // Only accept real remote covers (avoid local placeholders)
-            .filter(it => it && /^https?:/i.test(String(it.thumbnail || it.cover || '')))
-            .map(it => ({
-              id: it.id,
-              volumeInfo: {
-                title: it.title,
-                authors: it.authors || (it.author ? [it.author] : []),
-                description: it.description || '',
-                imageLinks: (it.thumbnail || it.cover) ? { thumbnail: it.thumbnail || it.cover, smallThumbnail: it.thumbnail || it.cover } : undefined,
-                infoLink: it.infoLink || null,
-                publishedDate: it.publishedDate || null,
-                categories: it.categories || []
-              }
-            }));
-        } catch (e) {
-          console.error('top-picks backend fetch failed, falling back to client search', e);
-        }
-  // If backend unavailable or thin, fall back to client-side Google Books query with strict cover validation
-        if (!tops || tops.length < 10) {
-          let clientTops = await collectValid('bestsellers 2024 OR trending books OR popular fiction OR award winning', 20);
-          if (clientTops.length < 20) {
-            clientTops = await backfill(
-              clientTops,
-              20,
-              new Set(clientTops.map((t) => t.id)),
-              ['subject:fiction bestseller', 'classics popular', 'subject:mystery thriller', 'subject:romance bestseller']
-            );
-          }
-          tops = clientTops;
+        // Fetch Top Picks (trending/bestsellers) - 20 books
+        let tops = await collectValid('bestsellers 2024 OR trending books OR popular fiction OR award winning', 20);
+        if (tops.length < 20) {
+          tops = await backfill(
+            tops,
+            20,
+            new Set(tops.map((t) => t.id)),
+            ['subject:fiction bestseller', 'classics popular', 'subject:mystery thriller', 'subject:romance bestseller']
+          );
         }
         if (!mounted) return;
-        // Fallback to local mock books if filters produced no results
-        if (!tops || tops.length === 0) {
-          const mock = (BOOKS || []).slice(0, 10).map(b => ({
-            id: b.id,
-            volumeInfo: {
-              title: b.title,
-              authors: [b.author],
-              description: b.summary,
-              imageLinks: b.cover ? { thumbnail: b.cover, smallThumbnail: b.cover } : undefined,
-              infoLink: b.infoLink || `https://www.google.com/search?q=${encodeURIComponent(b.title)}`
-            }
-          }));
-          setTopPicks(mock);
-        } else {
-          setTopPicks(tops || []);
-        }
+        setTopPicks(tops || []);
 
-        // (Removed consolidated preferences shelf per user request)
-
-        // Fetch personalized rows based on user's favorite genres via backend
-        // Only build shelves if the user has explicitly saved preferences
-        const genres = (user?.favoriteGenres && user.favoriteGenres.length
+        // Fetch personalized rows based on user's favorite genres.
+        const storedPrefs = userDataManager ? userDataManager.getData('preferences', null) : null;
+        const prefsGenres = (user && Array.isArray(user.favoriteGenres) && user.favoriteGenres.length)
           ? user.favoriteGenres
-          : []).slice(0, 6);
+          : (storedPrefs && Array.isArray(storedPrefs.favoriteGenres) && storedPrefs.favoriteGenres.length)
+            ? storedPrefs.favoriteGenres
+            : null;
+        const genres = (prefsGenres || ['Fiction', 'Mystery', 'Romance']).slice(0, 3);
         const per = {};
 
         await Promise.all(
           genres.map(async (g) => {
-            try {
-              const items = await getSavedPreferences({ genres: [g], limit: 15 });
-              if (!mounted) return;
-              // Adapt backend-normalized items to GoogleBookTile shape
-              per[g] = (items || []).map(it => ({
-                id: it.id,
-                volumeInfo: {
-                  title: it.title,
-                  authors: it.authors || (it.author ? [it.author] : []),
-                  description: it.description || '',
-                  imageLinks: (it.thumbnail || it.cover) ? { thumbnail: it.thumbnail || it.cover, smallThumbnail: it.thumbnail || it.cover } : undefined,
-                  infoLink: it.infoLink || null,
-                  publishedDate: it.publishedDate || null,
-                  categories: it.categories || []
-                }
-              }));
-            } catch (_err) {
-              // As a last resort, try client-side search for the shelf
-              let local = await collectValid(`subject:${g} bestseller popular`, 15);
-              if (local.length < 15) {
-                local = await backfill(
-                  local,
-                  15,
-                  new Set(local.map((x) => x.id)),
-                  [`subject:${g}`, 'bestsellers', 'popular fiction']
-                );
-              }
-              if (!mounted) return;
-              per[g] = local || [];
+            let items = await collectValid(`subject:${g} bestseller popular`, 15);
+            if (items.length < 15) {
+              items = await backfill(
+                items,
+                15,
+                new Set(items.map((x) => x.id)),
+                [`subject:${g}`, 'bestsellers', 'popular fiction']
+              );
             }
+            if (!mounted) return;
+            per[g] = items || [];
           })
         );
 
-        // Fallback: if any shelf is empty (or everything failed), backfill from local mock BOOKS
-        try {
-          const hasAny = Object.values(per).some(arr => Array.isArray(arr) && arr.length > 0);
-          if (!hasAny) {
-            // If user has no saved genres, don't fabricate shelves — keep personalized empty
-            if (genres.length === 0) {
-              if (mounted) setPersonalized({});
-            } else {
-            const fallback = {};
-            for (const g of genres) {
-              const picks = (BOOKS || []).filter(b => Array.isArray(b.genres) && b.genres.includes(g)).slice(0, 10);
-              fallback[g] = picks.map(b => ({
-                id: b.id,
-                volumeInfo: {
-                  title: b.title,
-                  authors: [b.author],
-                  description: b.summary,
-                  imageLinks: b.cover ? { thumbnail: b.cover, smallThumbnail: b.cover } : undefined,
-                  infoLink: b.infoLink || `https://www.google.com/search?q=${encodeURIComponent(b.title)}`
-                }
-              }));
-            }
-            if (mounted) setPersonalized(fallback);
-            }
-          } else if (mounted) {
-            setPersonalized(per);
-          }
-        } catch (_e) {
-          if (mounted) setPersonalized(per);
+        if (mounted) {
+          setPersonalized(per);
         }
       } catch (e) {
         console.error('Failed loading Google categories', e);
@@ -1527,7 +1400,7 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
     }
     load();
     return () => { mounted = false };
-  }, [user]);
+  }, [user, userDataManager]);
 
   return (
     <main className="pb-16">
@@ -1542,7 +1415,8 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
 
       <section className="max-w-6xl mx-auto px-4 space-y-8">
         
-        {/* Recently Viewed Section (always visible) */}
+        {/* Recently Viewed Section */}
+        {recentlyViewed && recentlyViewed.length > 0 && (
           <div className="modern-card p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -1562,21 +1436,20 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
             </div>
             <div className="overflow-x-auto -mx-3 py-2">
               <div className="flex gap-5 px-3">
-                {recentlyViewed.length === 0 && (
-                  <div className="text-sm text-slate-500 px-3 py-2">No items yet — browse Top Picks or Discover and click View to add here.</div>
-                )}
-                {recentlyViewed.map((b) => (
+                {recentlyViewed.filter(b => !!b.cover).map((b) => (
                   <div key={b.id} className="w-56 flex-shrink-0">
                     <div className="book-tile">
                       <article className="book-card">
                         <div className="book-cover-wrap">
-                          <img
-                            className="book-cover book-cover--strict"
-                            src={(b.cover || '/assets/default_cover.svg').replace(/^http:/,'https:')}
-                            alt={`${b.title} cover`}
-                            loading="lazy"
-                            onError={(e)=>{ e.currentTarget.src = '/assets/default_cover.svg'; }}
-                          />
+                          {b.cover && (
+                            <img
+                              className="book-cover book-cover--strict"
+                              src={b.cover.replace(/^http:/,'https:')}
+                              alt={`${b.title} cover`}
+                              loading="lazy"
+                              onError={(e)=>{ const card = e.currentTarget.closest('.book-card'); if (card) card.style.display='none'; }}
+                            />
+                          )}
                         </div>
                         <div className="book-info">
                           <h4 className="book-title">{b.title}</h4>
@@ -1592,16 +1465,16 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
               </div>
             </div>
           </div>
-        
+        )}
 
-        {/* Section 1: Trending (country-aware) */}
+        {/* Section 1: Top Picks (Trending Google Books) */}
         <div className="modern-card p-6 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-1">
-                🔥 Trending {user?.country ? `in ${user.country}` : ''}
+                🔥 Top Picks for You
               </h3>
-              <p className="text-sm text-slate-600">Popular and award-winning books{user?.country ? ` in ${user.country}` : ''}</p>
+              <p className="text-sm text-slate-600">Trending and popular books from around the world</p>
             </div>
             <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-semibold shadow-lg">
               Trending
@@ -1635,18 +1508,6 @@ function Dashboard({ user, setUser, ratings, setRatings, userDataManager }) {
         {/* Section 2: Recently Viewed (moved above Top Picks) - removed from here to avoid duplication */}
 
         {/* Section 3: Personalized Rows (Genre-based) */}
-        {Object.keys(personalized).length > 0 && (
-          <div className="modern-card p-4 bg-white/80">
-            <h3 className="text-xl font-semibold text-slate-800">🎯 Your Saved Preferences</h3>
-            <p className="text-sm text-slate-600">Separate shelves for each genre you saved</p>
-          </div>
-        )}
-        {Object.keys(personalized).length === 0 && (!user?.favoriteGenres || user.favoriteGenres.length === 0) && (
-          <div className="modern-card p-4 bg-white/80">
-            <h3 className="text-lg font-semibold text-slate-800">Make it personal</h3>
-            <p className="text-sm text-slate-600">Add your favorite genres in Profile to see personalized shelves here.</p>
-          </div>
-        )}
         {Object.entries(personalized).map(([label, items]) => (
           <div key={label} className="modern-card p-6 bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50">
             <div className="flex items-center justify-between mb-6">
@@ -1897,36 +1758,9 @@ function Favorites({ userDataManager }) {
   );
 }
 
-function Profile({ user, setUser, userDataManager, setRoute }) {
+function Profile({ user, setUser, userDataManager }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [country, setCountry] = useState("");
-  const COUNTRIES = [
-    "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan",
-    "Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi",
-    "Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Congo-Brazzaville)","Costa Rica","Côte d’Ivoire","Croatia","Cuba","Cyprus","Czechia",
-    "Democratic Republic of the Congo","Denmark","Djibouti","Dominica","Dominican Republic",
-    "Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
-    "Fiji","Finland","France",
-    "Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana",
-    "Haiti","Honduras","Hungary",
-    "Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy",
-    "Jamaica","Japan","Jordan",
-    "Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan",
-    "Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg",
-    "Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar",
-    "Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
-    "Oman",
-    "Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
-    "Qatar",
-    "Romania","Russia","Rwanda",
-    "Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria",
-    "Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
-    "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan",
-    "Vanuatu","Vatican City","Venezuela","Vietnam",
-    "Yemen",
-    "Zambia","Zimbabwe"
-  ];
   const [genres, setGenres] = useState("");
   const [timeBudget, setTimeBudget] = useState(6);
   const [saved, setSaved] = useState(false);
@@ -1935,9 +1769,7 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
   useEffect(() => {
     setName(user.name || "");
     setEmail(user.email || "");
-    setCountry(user.country || "");
-    // Do not prefill with defaults; leave empty until the user chooses
-    setGenres((Array.isArray(user.favoriteGenres) && user.favoriteGenres.length > 0) ? user.favoriteGenres.join(", ") : "");
+    setGenres(user.favoriteGenres?.join(", ") || "Mystery, Romance");
     setTimeBudget(user.timeBudgetHours || 6);
   }, [user]); // Reset when user changes
 
@@ -1952,7 +1784,6 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
       ...user,
       name: name || user.name,
       email: email || user.email,
-      country: country || '',
       favoriteGenres: fav,
       timeBudgetHours: timeBudget,
     };
@@ -1969,7 +1800,7 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
     // Try to persist to backend if available (non-blocking)
     (async () => {
       try {
-        await apiService.updateUserProfile({ id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, favoriteGenres: updatedUser.favoriteGenres, timeBudgetHours: updatedUser.timeBudgetHours, country: updatedUser.country });
+        await apiService.updateUserProfile({ id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, favoriteGenres: updatedUser.favoriteGenres, timeBudgetHours: updatedUser.timeBudgetHours });
       } catch (err) {
         // Backend update failed — we already persisted locally, so continue silently
         console.warn('Failed to update profile on server, saved locally instead', err);
@@ -1977,8 +1808,7 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
     })();
 
     setSaved(true);
-    // Stay on Profile and show a confirmation message instead of redirecting
-    setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => setSaved(false), 2000);
   }
 
   // Available genres for suggestions
@@ -1995,8 +1825,8 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Profile Settings</h2>
           {saved && (
-            <span className="text-green-600 text-sm flex items-center gap-1" role="status" aria-live="polite">
-              Your preferences are saved
+            <span className="text-green-600 text-sm flex items-center gap-1">
+              ✓ Preferences saved!
             </span>
           )}
         </div>
@@ -2048,15 +1878,6 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
               <p className="text-xs text-slate-500 mt-1">
                 How much time do you typically have for reading?
               </p>
-                          <div className="mt-4">
-                            <label className="label">Country</label>
-                            <select className="input-modern" value={country} onChange={(e)=>setCountry(e.target.value)}>
-                              <option value="">Select your country</option>
-                              {COUNTRIES.map((c)=> (
-                                <option key={c} value={c}>{c}</option>
-                              ))}
-                            </select>
-                          </div>
             </div>
           </div>
 
@@ -2154,13 +1975,11 @@ export default function App() {
     
     // Load user-specific preferences
     const userPrefs = dataManager.getData('preferences', null);
-    // Do not inject default saved preferences; start empty until user saves some
     const fullUser = userPrefs || {
       ...newUser,
-      favoriteGenres: [],
+      favoriteGenres: ["Mystery", "Romance"],
       historyTags: ["witty", "twist"],
       timeBudgetHours: 6,
-      country: newUser.country || '',
     };
     
     // Initialize user data if new user
@@ -2246,7 +2065,6 @@ export default function App() {
               user={user} 
               setUser={setUser}
               userDataManager={userDataManager}
-              setRoute={setRoute}
             />
           )}
         </main>

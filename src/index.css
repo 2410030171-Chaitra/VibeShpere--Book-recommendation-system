@@ -190,8 +190,9 @@
   .book-title { font-weight: 700; color: var(--title); }
 
   .book-info{ padding:0.5rem 0.7rem 0.55rem; display:flex; flex-direction:column; gap:0.3rem; flex:1 }
-  .book-title{ font-family: 'Playfair Display', serif; font-size:1.02rem; line-height:1.2; color:var(--title); margin:0 0 0.1rem 0 }
-  .book-authors{ color:var(--muted); font-size:0.9rem; line-height:1.25; margin:0.05rem 0 0 }
+  /* Clamp titles and authors to keep card heights consistent and avoid overflow */
+  .book-title{ font-family: 'Playfair Display', serif; font-size:1rem; line-height:1.2; color:var(--title); margin:0 0 0.1rem 0; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+  .book-authors{ color:var(--muted); font-size:0.9rem; line-height:1.25; margin:0.05rem 0 0; display:-webkit-box; -webkit-line-clamp:1; line-clamp:1; -webkit-box-orient:vertical; overflow:hidden }
   .book-desc{ color:var(--muted); font-size:0.88rem; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-clamp:2; overflow:hidden; margin-top:0.1rem }
 
   .card-footer{ margin-top:auto; display:flex; align-items:center; gap:0.5rem }

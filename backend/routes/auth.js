@@ -7,7 +7,8 @@ const router = express.Router();
 // Register user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, favoriteGenres = ['Mystery', 'Romance'] } = req.body;
+    // Do not set default saved preferences for new users
+    const { name, email, password, favoriteGenres = [] } = req.body;
 
     // Check if user already exists
     const [existingUser] = await pool.execute(
@@ -30,7 +31,7 @@ router.post('/register', async (req, res) => {
         name, 
         email, 
         passwordHash, 
-        JSON.stringify(favoriteGenres),
+        JSON.stringify(favoriteGenres || []),
         JSON.stringify(['witty', 'twist']),
         6
       ]

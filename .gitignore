@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Vite/Build outputs
+dist/
+build/
+*.local
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Editor/Tooling
+.idea/
+.vscode/
+.history/
+
+# OS/Other
+Thumbs.db
+*.swp
+*.swo
+
+# Backend
+backend/node_modules/
+backend/dist/

@@ -1,9 +1,12 @@
 // API service for communicating with the backend
 // During local tunnel testing we want the frontend to call the public backend tunnel.
 // Public backend tunnel URL (created via localtunnel): https://curly-ties-fry.loca.lt
-// Prefer an injected URL (e.g. from hosting or a dev tunnel). Fall back to localhost
-// so the frontend talks to the local backend during development.
-const API_BASE_URL = (typeof window !== 'undefined' && window.__API_BASE_URL__) || 'http://localhost:5000/api';
+// Prefer an injected URL (e.g. from hosting or a dev tunnel).
+// In Vite dev mode, default to the proxy at '/api'. In preview/production,
+// fall back to localhost unless overridden via window.__API_BASE_URL__.
+const API_BASE_URL =
+  (typeof window !== 'undefined' && window.__API_BASE_URL__)
+  || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV ? '/api' : 'http://localhost:3001/api');
 
 class ApiService {
   constructor() {
@@ -16,8 +19,11 @@ class ApiService {
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
         ...options.headers,
       },
+      cache: 'no-store',
       ...options,
     };
 
@@ -101,8 +107,10 @@ class ApiService {
   }
 
   // Recommendations (backend-powered)
-  async recoTrending(limit = 40) {
-    return await this.request(`/recommendations/trending?limit=${encodeURIComponent(String(limit))}`);
+  async recoTrending(limit = 40, country) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (country) params.set('country', country);
+    return await this.request(`/recommendations/trending?${params.toString()}`);
   }
 
   async recoSearch(q, limit = 60) {

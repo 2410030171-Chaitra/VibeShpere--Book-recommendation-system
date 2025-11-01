@@ -15,7 +15,6 @@ const GENRES = [
   { id: 'all', label: 'All Genres', emoji: '📚' },
   { id: 'fiction', label: 'Fiction', emoji: '📖' },
   { id: 'mystery', label: 'Mystery', emoji: '🔍' },
-  { id: 'romance', label: 'Romance', emoji: '💕' },
   { id: 'fantasy', label: 'Fantasy', emoji: '🧙' },
   { id: 'scifi', label: 'Sci-Fi', emoji: '🚀' },
   { id: 'thriller', label: 'Thriller', emoji: '😱' },
@@ -72,6 +71,8 @@ export default function DiscoverPage({ userDataManager }) {
   const [loading, setLoading] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [favorites, setFavorites] = useState([]);
+  // seed to reshuffle recommendation results for the same mood/genre
+  const [recoSeed, setRecoSeed] = useState(0);
 
   // dark mode state (persisted in localStorage)
   const [dark, setDark] = useState(() => {
@@ -131,7 +132,7 @@ export default function DiscoverPage({ userDataManager }) {
     if (selectedMood || selectedGenre !== 'all') {
       loadRecommendations();
     }
-  }, [selectedMood, selectedGenre]);
+  }, [selectedMood, selectedGenre, recoSeed]);
 
   // If a mood or a non-default genre is active, switch into "show only"
   // recommendations mode so unrelated UI is hidden (matches requested UX).
@@ -147,29 +148,8 @@ export default function DiscoverPage({ userDataManager }) {
     try {
       setLoadingTrending(true);
       
-      // Fetch trending books directly from Google Books with strict cover validation
-      const googleTrending = await fetchBooks('bestsellers OR trending OR popular', 0, 40);
-      
-      // Filter and format with strict cover validation
-      const formatted = googleTrending
-        .filter(item => {
-          const info = item.volumeInfo || {};
-          // STRICT: Only include books with valid cover images
-          const hasCover = !!(info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
-          return hasCover;
-        })
-        .map(item => ({
-          id: item.id,
-          title: item.volumeInfo?.title || 'Untitled',
-          author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
-          authors: item.volumeInfo?.authors || [],
-          cover: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          description: item.volumeInfo?.description || '',
-          averageRating: item.volumeInfo?.averageRating || 0,
-          infoLink: item.volumeInfo?.infoLink || ''
-        }))
-        .slice(0, 20);
+      // Fetch trending books from backend (Google Books + Open Library)
+      const formatted = await getTrendingBooks(20);
       
       if (!formatted || formatted.length === 0) {
         // activate fallback when upstream returned no usable items
@@ -193,38 +173,8 @@ export default function DiscoverPage({ userDataManager }) {
       setLoading(true);
       const genre = selectedGenre === 'all' ? '' : selectedGenre;
       
-      // Build smart query based on mood and genre
-      let query = '';
-      if (selectedMood && genre) {
-        query = `${selectedMood} ${genre}`;
-      } else if (selectedMood) {
-        query = selectedMood;
-      } else if (genre) {
-        query = `subject:${genre}`;
-      }
-      
-      const googleBooks = await fetchBooks(query || 'popular books', 0, 40);
-      
-      // Filter and format with strict cover validation
-      const formatted = googleBooks
-        .filter(item => {
-          const info = item.volumeInfo || {};
-          // STRICT: Only include books with valid cover images
-          const hasCover = !!(info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail));
-          return hasCover;
-        })
-        .map(item => ({
-          id: item.id,
-          title: item.volumeInfo?.title || 'Untitled',
-          author: (item.volumeInfo?.authors || []).join(', ') || 'Unknown',
-          authors: item.volumeInfo?.authors || [],
-          cover: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          thumbnail: item.volumeInfo?.imageLinks?.thumbnail || item.volumeInfo?.imageLinks?.smallThumbnail || '',
-          description: item.volumeInfo?.description || '',
-          averageRating: item.volumeInfo?.averageRating || 0,
-          infoLink: item.volumeInfo?.infoLink || ''
-        }))
-        .slice(0, 40);
+      // Fetch recommendations from backend API with mood and genre filters
+      const formatted = await getRecommendations(selectedMood || '', genre, 40, recoSeed || undefined);
       
       if (!formatted || formatted.length === 0) {
         setFallbackActive(true);
@@ -269,21 +219,9 @@ export default function DiscoverPage({ userDataManager }) {
     <div className="discover-page max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between gap-4 mb-3">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Discover Your Next Favorite Book
-          </h1>
-          <div className="flex items-center gap-3">
-            <GoogleSignInButton />
-            <button
-              aria-label="Toggle dark mode"
-              onClick={() => setDark(s => !s)}
-              className="px-3 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-sm"
-            >
-              {dark ? '🌙 Dark' : '☀️ Light'}
-            </button>
-          </div>
-        </div>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+          Discover Your Next Favorite Book
+        </h1>
         <p className="text-lg text-slate-600">
           AI-powered recommendations based on your mood and preferences
         </p>
@@ -294,15 +232,13 @@ export default function DiscoverPage({ userDataManager }) {
         )}
       </div>
 
-      {/* Mood Selector (hide when compact "show only" mode is active) */}
-      {!showOnlyRecommendations && (
-        <div className="modern-card p-6 mb-8">
-          <MoodSelector
-            selectedMood={selectedMood}
-            onMoodChange={(m) => { setSelectedMood(m); setSelectedGenre('all'); }}
-          />
-        </div>
-      )}
+      {/* Mood Selector - Always visible */}
+      <div className="modern-card p-6 mb-8">
+        <MoodSelector
+          selectedMood={selectedMood}
+          onMoodChange={(m) => { setSelectedMood(m); setSelectedGenre('all'); }}
+        />
+      </div>
 
       {/* Clear mood selection link shown when a mood is active */}
       {selectedMood && (
@@ -362,9 +298,18 @@ export default function DiscoverPage({ userDataManager }) {
               <span className="text-2xl">📚</span>
               <span>{selectedMood ? `${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)} Reads` : 'Recommendations'}</span>
             </h2>
-            <span className="text-sm text-slate-500">
-              {books.length} books found
-            </span>
+              <div className="flex items-center gap-3">
+                <button
+                  className="text-sm px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  onClick={() => setRecoSeed(Date.now())}
+                  title="Load a different set"
+                >
+                  Shuffle
+                </button>
+                <span className="text-sm text-slate-500">
+                  {books.length} books found
+                </span>
+              </div>
           </div>
 
           {loading ? (

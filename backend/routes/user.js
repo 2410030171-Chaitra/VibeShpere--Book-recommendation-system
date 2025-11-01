@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/profile', authMiddleware, async (req, res) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, name, email, favorite_genres, history_tags, time_budget_hours FROM users WHERE id = ?',
+      'SELECT id, name, email, favorite_genres, history_tags, time_budget_hours, country FROM users WHERE id = ?',
       [req.user.userId]
     );
 
@@ -22,7 +22,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
       email: user.email,
       favoriteGenres: JSON.parse(user.favorite_genres || '[]'),
       historyTags: JSON.parse(user.history_tags || '[]'),
-      timeBudgetHours: user.time_budget_hours || 6
+      timeBudgetHours: user.time_budget_hours || 6,
+      country: user.country || ''
     };
 
     res.json(userData);
@@ -35,23 +36,24 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // Update user profile
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { favoriteGenres, historyTags, timeBudgetHours } = req.body;
+  const { favoriteGenres, historyTags, timeBudgetHours, country } = req.body;
 
     await pool.execute(
       `UPDATE users 
-       SET favorite_genres = ?, history_tags = ?, time_budget_hours = ?, updated_at = CURRENT_TIMESTAMP
+       SET favorite_genres = ?, history_tags = ?, time_budget_hours = ?, country = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
         JSON.stringify(favoriteGenres || []),
         JSON.stringify(historyTags || []),
         timeBudgetHours || 6,
+        country || null,
         req.user.userId
       ]
     );
 
     // Fetch updated user data
     const [users] = await pool.execute(
-      'SELECT id, name, email, favorite_genres, history_tags, time_budget_hours FROM users WHERE id = ?',
+      'SELECT id, name, email, favorite_genres, history_tags, time_budget_hours, country FROM users WHERE id = ?',
       [req.user.userId]
     );
 
@@ -62,7 +64,8 @@ router.put('/profile', authMiddleware, async (req, res) => {
       email: user.email,
       favoriteGenres: JSON.parse(user.favorite_genres || '[]'),
       historyTags: JSON.parse(user.history_tags || '[]'),
-      timeBudgetHours: user.time_budget_hours || 6
+      timeBudgetHours: user.time_budget_hours || 6,
+      country: user.country || ''
     };
 
     res.json({

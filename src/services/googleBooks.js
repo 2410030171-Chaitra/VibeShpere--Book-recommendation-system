@@ -22,24 +22,28 @@ function normalizeImageLinks(item){
   return item;
 }
 
-function isAdultContent(item) {
-  if (!item || !item.volumeInfo) return false;
-  const info = item.volumeInfo;
-  // Check Google Books maturityRating
-  if (info.maturityRating && String(info.maturityRating).toUpperCase() === 'MATURE') return true;
-
-  const adultKeywords = [
-    'erotica','adult','explicit','18+','nsfw','sex','sexual','porn','xxx','mature','smut','r18','r-18','bdsm','fetish','taboo','incest','hentai','yaoi','yuri'
-  ];
-  const text = [info.title, info.subtitle, info.description, ...(info.categories||[]), ...(info.subjects||[])]
-    .filter(Boolean).join(' ').toLowerCase();
-  return adultKeywords.some(k => text.includes(k));
-}
+// Adult content filter disabled: include 18+ books as requested
+function isAdultContent(_item) { return false; }
 
 // Runtime blacklist: any title/author/id listed here will be excluded from
 // Google Books results returned by the helper. Lowercase substrings are used.
 const RUNTIME_BLOCKLIST = [
   'the ticket',
+  // backend-aligned runtime exclusions
+  'l. ron hubbard',
+  'writers of the future',
+  'karen wiesner',
+  'midnight angel',
+  'princess stakes',
+  "duke's princess bride",
+  'amalie howard',
+  // calm-specific removals
+  'calm the f',
+  'calm the fuck down',
+  "no f*cks given",
+  'sandra brown',
+  'rachel ryan',
+  'walking dead'
 ];
 
 export function isBlocked(item) {
@@ -67,8 +71,8 @@ export default async function fetchBooks(query, startIndex = 0, max = 40, signal
   if(!res.ok) throw new Error('Network error');
   const json = await res.json();
   let items = (json.items || []).map(normalizeImageLinks);
-  // Filter out adult/mature results and runtime-blocked titles
-  items = items.filter(i => !isAdultContent(i) && !isBlocked(i));
+  // Only apply runtime blocklist; allow adult/mature results
+  items = items.filter(i => !isBlocked(i));
   return items;
 }
 
@@ -85,12 +89,19 @@ export async function fetchBooksMany(query, count = 200, signal){
   const numPages = Math.ceil(count / 40);
   const requests = [];
   for (let i = 0; i < numPages; i++) {
-    requests.push(fetchBooks(query, i * 40, 40, signal));
+    requests.push(
+      (async () => {
+        try { return await fetchBooks(query, i * 40, 40, signal); }
+        catch (_) { return []; }
+      })()
+    );
   }
-  const results = await Promise.all(requests);
-  const flat = results.flat();
+  const settled = await Promise.allSettled(requests);
+  const flat = settled
+    .map(r => (r.status === 'fulfilled' ? r.value : []))
+    .flat();
   // Normalize and filter adult content + runtime-blocklist
-  const normalized = flat.map(normalizeImageLinks).filter(i => !isAdultContent(i) && !isBlocked(i));
+  const normalized = flat.map(normalizeImageLinks).filter(i => !isBlocked(i));
   cache.set(key, { t: now, v: normalized });
   return normalized;
 }

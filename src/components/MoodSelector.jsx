@@ -1,16 +1,16 @@
+/* eslint-disable react/prop-types */
 import React from 'react';
 
+// Minimal, curated mood groups (as requested)
+// Each button represents a top-level mood category. The backend maps these
+// moods to more specific query terms (see backend/routes/recommendations.js).
 const MOODS = [
-  { id: 'happy', label: 'Happy', emoji: '😊' },
-  { id: 'romantic', label: 'Romantic', emoji: '�' },
-  { id: 'adventurous', label: 'Adventurous', emoji: '�️' },
-  { id: 'mysterious', label: 'Mysterious', emoji: '�' },
-  { id: 'inspiring', label: 'Inspiring', emoji: '✨' },
-  { id: 'reflective', label: 'Reflective', emoji: '🌧️' },
-  { id: 'calm', label: 'Calm', emoji: '🫧', subtitle: 'Peaceful & cozy reads' },
-  { id: 'dark', label: 'Dark', emoji: '🌑' },
-  { id: 'fantastical', label: 'Fantastical', emoji: '🧙' },
-  { id: 'thoughtful', label: 'Thoughtful', emoji: '☁️' }
+  { id: 'positive', label: 'Positive', emoji: '🌞', subtitle: 'Feel-good, uplifting, motivational' },
+  { id: 'emotional', label: 'Emotional', emoji: '🌧️', subtitle: 'Sad, reflective, healing reads' },
+  { id: 'energetic', label: 'Energetic', emoji: '⚡', subtitle: 'Adventure, mystery, thrillers' },
+  { id: 'calm', label: 'Calm', emoji: '🌙', subtitle: 'Dreamy, chill, thoughtful' },
+  { id: 'tech', label: 'Tech', emoji: '💡', subtitle: 'Science, tech, creative non-fiction' },
+  { id: 'feelgood', label: 'Feel-Good', emoji: '💖', subtitle: 'Hopeful, community, empathetic' }
 ];
 
 export default function MoodSelector({ selectedMood, onMoodChange }) {

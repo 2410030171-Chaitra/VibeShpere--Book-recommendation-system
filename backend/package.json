@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate": "node scripts/run_migrations.js",
-    "test:integration": "node scripts/integration_test.js"
+    "test:integration": "node scripts/integration_test.js",
+    "test:reco": "node scripts/smoke_recommendations.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

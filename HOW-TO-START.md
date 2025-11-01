@@ -1,4 +1,4 @@
-# 🚀 CalmReads Website - Quick Start Guide
+# 🚀 VibeSphere Website - Quick Start Guide
 
 ## 🌟 **How to Start Your Website**
 

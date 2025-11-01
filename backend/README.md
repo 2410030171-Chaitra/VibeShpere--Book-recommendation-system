@@ -1,6 +1,6 @@
-# CalmReads Backend API
+# VibeSphere Backend API
 
-This is the backend API for the CalmReads book recommendation system, built with Node.js, Express, and MySQL.
+This is the backend API for the VibeSphere book recommendation system, built with Node.js, Express, and MySQL.
 
 ## Setup Instructions
 

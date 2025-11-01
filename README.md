@@ -1,4 +1,4 @@
-# CalmReads - Book Recommendation Website
+# VibeSphere - Book Recommendation Website
 
 A serene, modern book recommendation website built with React and TailwindCSS. Features hybrid filtering (content + collaborative) for personalized book recommendations.
 

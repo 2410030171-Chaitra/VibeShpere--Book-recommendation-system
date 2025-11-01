@@ -1,11 +1,11 @@
-# CalmReads with SQL Database Integration
+# VibeSphere with SQL Database Integration
 
-Your CalmReads application now includes a complete backend API with SQL database integration! Here's everything you need to know:
+Your VibeSphere application now includes a complete backend API with SQL database integration! Here's everything you need to know:
 
 ## 🏗️ Architecture Overview
 
 ```
-CalmReads Project/
+VibeSphere Project/
 ├── frontend/               # React app (Vite + TailwindCSS)
 │   ├── src/
 │   ├── App.jsx

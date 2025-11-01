@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CalmReads Database Viewer
+# VibeSphere Database Viewer
 # Interactive tool to manage and view your book database
 
 # Database configuration
@@ -8,7 +8,7 @@ DB_HOST="localhost"
 DB_NAME="calmreads_db"
 DB_USER="root"
 
-echo "🗄️  CalmReads Database Viewer"
+echo "🗄️  VibeSphere Database Viewer"
 echo "================================"
 echo "📊 Database Connection Info:"
 echo "Host: $DB_HOST"

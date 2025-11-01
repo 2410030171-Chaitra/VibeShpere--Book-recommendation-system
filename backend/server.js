@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectMongoIfEnabled = require('./config/mongodb');
+const path = require('path');
+const fs = require('fs');
 const { testConnection: testMySQLConnection, pool } = require('./config/database');
 // ...existing imports...
 
@@ -54,6 +56,19 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoritesRoutes);
 
+// --- Serve frontend for single-link deployments ---
+// When deployed as a single Render Web Service, we build the Vite app at repo root
+// (dist directory) and serve it from here. This gives one URL for both API and UI.
+const distDir = path.resolve(__dirname, '..', 'dist');
+if (fs.existsSync(distDir)) {
+  // Serve static assets
+  app.use(express.static(distDir, { index: 'index.html', maxAge: '1h' }));
+  // SPA fallback for any non-API route
+  app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
+
 // Health check endpoint (includes DB probe)
 app.get('/api/health', async (req, res) => {
   async function checkDB() {
@@ -88,8 +103,8 @@ app.use((err, req, res, _next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler (API-only; UI routes are handled by SPA fallback above)
+app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

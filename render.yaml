@@ -1,0 +1,46 @@
+# Render Blueprint for VibeSphere – single service (one link)
+# This deploys ONE Web Service that serves both the API and the built React app.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: vibesphere
+    env: node
+    rootDir: .
+    plan: free
+    buildCommand: |
+      npm ci
+      npm --prefix backend ci
+      npm run build
+      # Optional: run SQL migrations after install; ignore failure if DB isn't ready in build stage
+      npm --prefix backend run migrate || true
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Provide either discrete DB_* vars or a DATABASE_URL.
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        sync: false
+      # Optional Mongo if you enable it
+      - key: MONGODB_URI
+        sync: false
+
+# Notes:
+# - server.js now serves the built Vite frontend from /dist, giving a single URL for UI + API.
+# - DATABASE_URL example: mysql://USER:PASSWORD@HOST:3306/DBNAME?ssl=true

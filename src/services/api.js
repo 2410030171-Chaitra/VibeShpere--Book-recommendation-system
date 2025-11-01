@@ -4,8 +4,14 @@
 // Prefer an injected URL (e.g. from hosting or a dev tunnel).
 // In Vite dev mode, default to the proxy at '/api'. In preview/production,
 // fall back to localhost unless overridden via window.__API_BASE_URL__.
+// Priority of resolution (left to right):
+// 1) window.__API_BASE_URL__ (runtime injection, e.g., from hosting)
+// 2) Vite env var VITE_API_BASE_URL (compile-time for Static Site hosting like Render)
+// 3) In dev, use Vite proxy '/api'
+// 4) Fallback to local backend
 const API_BASE_URL =
   (typeof window !== 'undefined' && window.__API_BASE_URL__)
+  || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
   || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV ? '/api' : 'http://localhost:3001/api');
 
 class ApiService {

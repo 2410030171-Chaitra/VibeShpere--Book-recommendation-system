@@ -284,7 +284,7 @@ export async function getAuthorBio(name){
     const doc = best || docs[0];
     const key = doc.key; // e.g., "/authors/OL23919A"
     const olid = key?.split('/').pop();
-    const detailsRes = await fetch(`https://openlibrary.org${key}.json`);
+  const detailsRes = await fetch(`https://openlibrary.org${key}.json`);
     const details = detailsRes.ok ? await detailsRes.json() : {};
     const worksRes = await fetch(`https://openlibrary.org${key}/works.json?limit=50`);
     const worksJson = worksRes.ok ? await worksRes.json() : { entries: [] };
@@ -295,6 +295,29 @@ export async function getAuthorBio(name){
     if (details && details.bio) {
       bio = typeof details.bio === 'string' ? details.bio : (details.bio?.value || '');
     }
+
+    // If Open Library has a photo id list but no direct image, derive image URL
+    let photoUrl = null;
+    try {
+      if (Array.isArray(details?.photos) && details.photos.length > 0) {
+        const pid = details.photos.find((x)=>Number.isFinite(x));
+        if (Number.isFinite(pid)) photoUrl = `https://covers.openlibrary.org/a/id/${pid}-L.jpg`;
+      }
+    } catch(_){}
+
+    // Wikipedia enrichment: if bio is empty/short, or we still lack photo, try wiki summary
+    try {
+      const wTitle = typeof details?.wikipedia === 'string' ? details.wikipedia.replace(/^https?:\/\/en\.wikipedia\.org\/wiki\//,'') : null;
+      const page = wTitle || null;
+      if (page) {
+        const wiki = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(page)}`);
+        if (wiki.ok) {
+          const wj = await wiki.json();
+          if ((!bio || bio.length < 120) && wj.extract) bio = wj.extract;
+          if (!photoUrl && wj.thumbnail && wj.thumbnail.source) photoUrl = wj.thumbnail.source;
+        }
+      }
+    } catch(_){}
     return {
       name: details?.name || doc.name || q,
       bookCount: doc.work_count ?? null,
@@ -305,7 +328,7 @@ export async function getAuthorBio(name){
       birthDate: details?.birth_date || doc.birth_date || null,
       deathDate: details?.death_date || doc.death_date || null,
       aliases: Array.isArray(details?.alternate_names) ? details.alternate_names.slice(0, 10) : [],
-      photo: olid ? `https://covers.openlibrary.org/a/olid/${olid}-L.jpg` : null,
+      photo: photoUrl || (olid ? `https://covers.openlibrary.org/a/olid/${olid}-L.jpg` : null),
       openLibraryUrl: key ? `https://openlibrary.org${key}` : null,
       wikipediaUrl: typeof details?.wikipedia === 'string' ? details.wikipedia : null,
     };
@@ -351,6 +374,19 @@ export async function getBookInfo(title, author){
         }
       } catch(_){}
     }
+
+    // If still no description, try Wikipedia summary (en)
+    if (!description || description.length < 40) {
+      try {
+        const page = t; // best-effort page title
+        const wiki = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(page)}`);
+        if (wiki.ok) {
+          const wj = await wiki.json();
+          if (wj.extract) description = wj.extract;
+        }
+      } catch(_){}
+    }
+
     return {
       title: doc.title || t,
       authors: Array.isArray(doc.author_name) ? doc.author_name : (doc.author_name ? [doc.author_name] : []),

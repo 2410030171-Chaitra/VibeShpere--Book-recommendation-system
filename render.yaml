@@ -12,14 +12,25 @@ services:
       npm ci
       npm --prefix backend ci
       npm run build
-      # Optional: run SQL migrations after install; ignore failure if DB isn't ready in build stage
-      npm --prefix backend run migrate || true
+      # Optional: run SQL migrations only if MySQL is configured and not explicitly disabled
+      if [ "${ALLOW_NO_MYSQL}" = "true" ] || [ -z "${DATABASE_URL}${DB_HOST}${MYSQLHOST}" ]; then \
+        echo "Skipping SQL migrations (ALLOW_NO_MYSQL=true or no DB env)"; \
+      else \
+        npm --prefix backend run migrate || true; \
+      fi
     startCommand: node backend/server.js
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: VITE_API_BASE_URL
+        value: /api
+      # Enable Mongo-only mode in the app
+      - key: USE_MONGODB
+        value: "true"
+      - key: ALLOW_NO_MYSQL
+        value: "true"
       # Provide either discrete DB_* vars or a DATABASE_URL.
       - key: DATABASE_URL
         sync: false
@@ -36,10 +47,10 @@ services:
       - key: DB_SSL
         value: "true"
       - key: JWT_SECRET
-        sync: false
+        sync: true
       # Optional Mongo if you enable it
       - key: MONGODB_URI
-        sync: false
+        sync: true
 
 # Notes:
 # - server.js now serves the built Vite frontend from /dist, giving a single URL for UI + API.

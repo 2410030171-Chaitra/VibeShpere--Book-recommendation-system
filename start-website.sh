@@ -187,16 +187,31 @@ wait_for_backend() {
 }
 run_frontend_dev() {
     echo "🌐 Starting Frontend (dev: npm run dev) -> $FRONTEND_LOG_DEV"
-    # If something is already listening on the frontend port, reuse it.
-    EXISTING_FRONTEND_PID=$(lsof -tiTCP:"$FRONTEND_DEV_PORT" -sTCP:LISTEN -P -n 2>/dev/null || true)
-    if [ -n "$EXISTING_FRONTEND_PID" ]; then
-        echo "Found existing frontend listening on port $FRONTEND_DEV_PORT (pid $EXISTING_FRONTEND_PID), will not start a new dev server"
-        FRONTEND_PID=$EXISTING_FRONTEND_PID
-        echo "$FRONTEND_PID" > "$FRONTEND_PID_FILE"
-        return
+    # If something is already listening on the frontend port, verify it's actually a Vite dev server.
+    EXISTING_FRONTEND_PIDS=$(lsof -tiTCP:"$FRONTEND_DEV_PORT" -sTCP:LISTEN -P -n 2>/dev/null || true)
+    if [ -n "$EXISTING_FRONTEND_PIDS" ]; then
+        for PID in $EXISTING_FRONTEND_PIDS; do
+            PROC_COMM=$(ps -p "$PID" -o comm= 2>/dev/null | tr -d '\n' || true)
+            PROC_ARGS=$(ps -p "$PID" -o args= 2>/dev/null | tr -d '\n' || true)
+            if echo "$PROC_COMM $PROC_ARGS" | grep -Eqi "(vite|node .*vite)"; then
+                echo "Found existing Vite dev server on port $FRONTEND_DEV_PORT (pid $PID), reusing it"
+                FRONTEND_PID=$PID
+                echo "$FRONTEND_PID" > "$FRONTEND_PID_FILE"
+                return
+            fi
+        done
+        echo "Port $FRONTEND_DEV_PORT is in use by a non-Vite process; selecting a new port for the dev server"
+        # find a free port starting from the next port
+        CANDIDATE=$((FRONTEND_DEV_PORT+1))
+        while lsof -tiTCP:"$CANDIDATE" -sTCP:LISTEN -P -n >/dev/null 2>&1; do
+            CANDIDATE=$((CANDIDATE+1))
+        done
+        FRONTEND_DEV_PORT=$CANDIDATE
+        export FRONTEND_DEV_PORT
+        echo "Using frontend dev port: $FRONTEND_DEV_PORT"
     fi
 
-    nohup npm run dev > "$FRONTEND_LOG_DEV" 2>&1 &
+    nohup npm run dev -- --port "$FRONTEND_DEV_PORT" > "$FRONTEND_LOG_DEV" 2>&1 &
     FRONTEND_PID=$!
     echo "$FRONTEND_PID" > "$FRONTEND_PID_FILE"
 }

@@ -1,0 +1,23 @@
+# MongoDB Configuration (optional; disabled by default)
+# Set USE_MONGODB=true to enable Mongo. Provide your Mongo connection string in MONGODB_URI.
+# Example (local): MONGODB_URI=mongodb://localhost:27017/vibesphere
+# Example (Atlas): MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/vibesphere?retryWrites=true&w=majority
+USE_MONGODB=true
+# Use your Atlas SRV URI with an explicit database name and standard options
+MONGODB_URI=mongodb+srv://pravalika_118:sGR46h_iPdGm56_@vibesphere.ahbdwy5.mongodb.net/vibesphere?retryWrites=true&w=majority
+# Legacy MySQL Config (keeping for reference)
+# MySQL configuration (uncomment and set to enable MySQL)
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=pravalika_118
+DB_NAME=calmreads_db
+DB_PORT=3306
+
+# JWT Configuration
+JWT_SECRET=7c8cebf80e169c34416f535ced0c5b87ebc4d6fbafe0e7ab6fb78802b1b69ca7579185e3ea42abbbd09de418224c4f22511e3618df55451dc94230d9d82ae0c5
+
+# Server Configuration
+PORT=3001
+NODE_ENV=development
+# Allow starting without MySQL (Mongo-only mode). Set to true on Render too if you run without MySQL.
+ALLOW_NO_MYSQL=true

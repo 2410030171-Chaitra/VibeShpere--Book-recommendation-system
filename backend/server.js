@@ -28,6 +28,7 @@ if (!process.env.JWT_SECRET || /your_super_secret_jwt_key_here/i.test(String(pro
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const ALLOW_NO_MYSQL = String(process.env.ALLOW_NO_MYSQL || process.env.MYSQL_OPTIONAL || 'false').toLowerCase() === 'true';
 
 // Middleware
 // Disable ETag to avoid 304 Not Modified responses that can confuse JSON clients
@@ -70,10 +71,17 @@ app.use('/api/favorites', favoritesRoutes);
 // (dist directory) and serve it from here. This gives one URL for both API and UI.
 const distDir = path.resolve(__dirname, '..', 'dist');
 if (fs.existsSync(distDir)) {
-  // Serve static assets
-  app.use(express.static(distDir, { index: 'index.html', maxAge: '1h' }));
-  // SPA fallback for any non-API route
+  // Serve only built assets with caching
+  const assetsDir = path.join(distDir, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    app.use('/assets', express.static(assetsDir, { maxAge: '1h' }));
+  }
+  // Serve other static files like /vite.svg with short cache
+  app.use('/vite.svg', express.static(path.join(distDir, 'vite.svg'), { maxAge: '1h' }));
+
+  // SPA fallback for any non-API route — ensure fresh HTML to avoid hashed-asset mismatches
   app.get(/^(?!\/api\/).*/, (_req, res) => {
+    res.set('Cache-Control', 'no-store');
     res.sendFile(path.join(distDir, 'index.html'));
   });
 }
@@ -87,6 +95,9 @@ app.get('/api/health', async (req, res) => {
       conn.release();
       return { ok: true };
     } catch (e) {
+      if (ALLOW_NO_MYSQL) {
+        return { ok: true, mode: 'mysql-skipped', note: 'ALLOW_NO_MYSQL=true' };
+      }
       return { ok: false, error: e.message };
     }
   }
@@ -122,7 +133,15 @@ async function startServer() {
   try {
     // Optional: try Mongo (non-fatal) and verify MySQL connectivity
     await connectMongoIfEnabled();
-    await testMySQLConnection();
+    try {
+      await testMySQLConnection();
+    } catch (err) {
+      if (ALLOW_NO_MYSQL) {
+        console.warn('[WARN] MySQL connection failed, but ALLOW_NO_MYSQL=true so continuing startup:', err && err.message);
+      } else {
+        throw err;
+      }
+    }
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 VibeSphere API server running on http://localhost:${PORT}`);

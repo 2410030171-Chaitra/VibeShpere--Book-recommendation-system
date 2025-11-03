@@ -74,6 +74,24 @@ export default function DiscoverPage({ userDataManager }) {
   // seed to reshuffle recommendation results for the same mood/genre
   const [recoSeed, setRecoSeed] = useState(0);
 
+  // Pull preferred country from saved preferences (robust against different storage keys)
+  function getPreferredCountry(){
+    try {
+      // Primary: explicit country saved via userDataManager
+      const direct = userDataManager?.getData && userDataManager.getData('country');
+      if (direct && String(direct).trim()) return String(direct).trim();
+      // Profile object
+      const profile = userDataManager?.getData && userDataManager.getData('profile');
+      if (profile && profile.country) return String(profile.country).trim();
+      // LocalStorage fallbacks
+      const lsCountry = localStorage.getItem('vibesphere_country');
+      if (lsCountry && String(lsCountry).trim()) return String(lsCountry).trim();
+      const lsProfileRaw = localStorage.getItem('vibesphere_profile');
+      if (lsProfileRaw){ try { const p = JSON.parse(lsProfileRaw); if (p && p.country) return String(p.country).trim(); } catch(_){} }
+    } catch(_){}
+    return '';
+  }
+
   // dark mode state (persisted in localStorage)
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('vibesphere_theme') === 'dark'; } catch(e){ return false; }
@@ -147,9 +165,9 @@ export default function DiscoverPage({ userDataManager }) {
   async function loadTrendingBooks() {
     try {
       setLoadingTrending(true);
-      
-      // Fetch trending books from backend (Google Books + Open Library)
-      const formatted = await getTrendingBooks(20);
+      const countryPref = getPreferredCountry();
+      // Fetch trending books; if a country is saved, bias results for that country (e.g., IN)
+      const formatted = await getTrendingBooks({ limit: 20, country: countryPref });
       
       if (!formatted || formatted.length === 0) {
         // activate fallback when upstream returned no usable items

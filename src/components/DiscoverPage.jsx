@@ -92,6 +92,29 @@ export default function DiscoverPage({ userDataManager }) {
     return '';
   }
 
+  // Normalize a country string (even partial) to a likely ISO2 code the backend understands
+  function normalizeCountryToCode(raw){
+    const s = String(raw||'').toLowerCase().replace(/[^a-z]/g,'');
+    if (!s) return '';
+    const map = [
+      ['in','india'],['us','unitedstates','usa','america'],['gb','unitedkingdom','greatbritain','england','uk'],
+      ['ca','canada'],['au','australia'],['nz','newzealand'],['ie','ireland'],['za','southafrica'],
+      ['de','germany'],['fr','france'],['es','spain','espana'],['it','italy'],['pt','portugal','brasil','brazil'],
+      ['br','brazil','brasil'],['mx','mexico'],['ar','argentina'],['co','colombia'],['cl','chile'],
+      ['nl','netherlands','holland'],['be','belgium'],['ch','switzerland'],['pl','poland'],
+      ['se','sweden'],['no','norway'],['dk','denmark'],['fi','finland'],
+      ['jp','japan','nippon'],['kr','korea','southkorea'],['cn','china'],['hk','hongkong'],['tw','taiwan'],
+      ['sa','saudiarabia'],['ae','uae','unitedarabemirates'],['eg','egypt']
+    ];
+    for (const [code, ...aliases] of map){
+      if (s === code) return code.toUpperCase();
+      if (aliases.some(a => s.includes(a))) return code.toUpperCase();
+    }
+    // Partial match: e.g., 'ind' -> IN
+    if (s.startsWith('ind')) return 'IN';
+    return '';
+  }
+
   // dark mode state (persisted in localStorage)
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('vibesphere_theme') === 'dark'; } catch(e){ return false; }
@@ -165,7 +188,8 @@ export default function DiscoverPage({ userDataManager }) {
   async function loadTrendingBooks() {
     try {
       setLoadingTrending(true);
-      const countryPref = getPreferredCountry();
+  const countryRaw = getPreferredCountry();
+  const countryPref = normalizeCountryToCode(countryRaw) || countryRaw;
       // Fetch trending books; if a country is saved, bias results for that country (e.g., IN)
       const formatted = await getTrendingBooks({ limit: 20, country: countryPref });
       

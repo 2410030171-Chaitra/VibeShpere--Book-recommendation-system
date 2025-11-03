@@ -64,9 +64,37 @@ export default function BookImage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryUrl, secondaryUrl, altIdentifiers?.isbn, fallbackUrl]);
 
-  const handleError = (e) => {
+  const triedRescueRef = React.useRef(false);
+
+  const handleError = async (e) => {
     // Move to the next candidate
     if (candidates.length <= 1) {
+      // Last chance: try to rescue via Open Library search by title+author.
+      if (!triedRescueRef.current && (title || author)) {
+        triedRescueRef.current = true;
+        try {
+          const params = new URLSearchParams();
+          if (title) params.set('title', title);
+          if (author) params.set('author', author);
+          params.set('limit', '1');
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 2500);
+          const res = await fetch(`https://openlibrary.org/search.json?${params.toString()}`, { signal: controller.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const json = await res.json();
+            const doc = (json && json.docs && json.docs[0]) || null;
+            const coverId = doc && doc.cover_i;
+            if (coverId) {
+              const better = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
+              setCandidates([better]);
+              setSrc(better);
+              return; // will try loading better
+            }
+          }
+        } catch(_) { /* ignore */ }
+      }
+
       // No more candidates.
       if (fallbackUrl) {
         if (e && e.currentTarget && e.currentTarget.src !== fallbackUrl) {

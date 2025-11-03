@@ -2132,7 +2132,12 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
 // -----------------------------
 export default function App() {
   const [user, setUser] = useState(null);
-  const [route, setRoute] = useState("discover");
+  // Initialize route from persisted preference; default to Home (dashboard).
+  const [route, setRoute] = useState(() => {
+    try {
+      return loadLS('vibesphere_route', 'dashboard') || 'dashboard';
+    } catch { return 'dashboard'; }
+  });
   const [theme, setTheme] = useState('morning');
   const [ratings, setRatings] = useState({ ...MOCK_USER_RATINGS });
   const [userDataManager, setUserDataManager] = useState(null);
@@ -2147,6 +2152,11 @@ export default function App() {
     const savedTheme = loadLS('vibesphere_theme', 'morning');
     setTheme(savedTheme || 'morning');
   }, []);
+
+  // Persist route so refresh or cold opens don't unexpectedly land on a different tab
+  useEffect(() => {
+    try { saveLS('vibesphere_route', route); } catch(_){}
+  }, [route]);
   
   // Function to properly load user and their data
   const handleUserLogin = (newUser) => {

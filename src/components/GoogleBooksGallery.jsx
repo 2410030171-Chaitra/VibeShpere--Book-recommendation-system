@@ -345,6 +345,55 @@ export default function GoogleBooksGallery({ userDataManager }) {
         }
       }
 
+      // If Google returned very few items (common on some networks/regions),
+      // fall back to Open Library search to augment results with proper covers.
+      if (filtered.length < 12) {
+        try {
+          const params = new URLSearchParams();
+          // Prefer author-focused search when we detected an author name
+          const authorName = extractAuthorName(q);
+          if (authorName) params.set('author', authorName);
+          const titleCand = extractTitleCandidate(q);
+          if (titleCand) params.set('title', titleCand);
+          if (!authorName && !titleCand) params.set('q', q);
+          params.set('limit', '40');
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(`https://openlibrary.org/search.json?${params.toString()}`, { signal: controller.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const json = await res.json();
+            const docs = Array.isArray(json?.docs) ? json.docs : [];
+            const olItems = [];
+            for (const d of docs) {
+              const coverId = d?.cover_i;
+              const olCover = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
+              if (!olCover) continue; // require a real cover to avoid placeholders
+              const title = d?.title || d?.title_suggest || 'Untitled';
+              const authors = Array.isArray(d?.author_name) ? d.author_name : (d?.author_name ? [d.author_name] : []);
+              const isbn = Array.isArray(d?.isbn) && d.isbn.length ? d.isbn[0] : undefined;
+              olItems.push({
+                id: `ol-${d.key || d.cover_i || Math.random().toString(36).slice(2)}`,
+                volumeInfo: {
+                  title,
+                  authors,
+                  description: d?.first_sentence || '',
+                  imageLinks: { thumbnail: olCover, smallThumbnail: olCover },
+                  industryIdentifiers: isbn ? [{ type: 'ISBN_13', identifier: isbn }] : undefined,
+                  infoLink: d?.key ? `https://openlibrary.org${d.key}` : undefined
+                }
+              });
+              if (filtered.length + olItems.length >= target) break;
+            }
+            if (olItems.length) {
+              filtered = [...filtered, ...olItems].slice(0, target);
+            }
+          }
+        } catch(_) {
+          // ignore OL fallback failure
+        }
+      }
+
       setItems(filtered);
       setStatus(filtered.length ? `Showing ${filtered.length} result${filtered.length>1?'s':''}` : 'No results');
     }catch(e){

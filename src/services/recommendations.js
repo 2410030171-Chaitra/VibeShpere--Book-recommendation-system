@@ -242,8 +242,46 @@ export async function getAuthorBio(name){
     const search = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(q)}`);
     if (!search.ok) return null;
     const sJson = await search.json();
-    const doc = (sJson?.docs || [])[0];
-    if (!doc) return null;
+    const docs = (sJson?.docs || []);
+    if (!docs.length) {
+      return { name: q, bookCount: null, notableWorks: [], topSubjects: [] };
+    }
+
+    // Choose best match by similarity to query, prefer higher work_count
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+    const levenshtein = (a, b) => {
+      a = norm(a); b = norm(b);
+      const m = a.length, n = b.length;
+      if (m === 0) return n; if (n === 0) return m;
+      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    };
+    const qn = norm(q);
+    let best = null; let bestScore = -Infinity;
+    for (const d of docs) {
+      const dn = norm(d.name || '');
+      const dist = levenshtein(dn, qn);
+      let score = 100 - Math.min(dist, 100);
+      if ((d.work_count ?? 0) > 0) score += Math.min(d.work_count, 50) * 0.1; // small bonus
+      if (dn === qn) score += 25; // exact normalized match bonus
+      // Common variant: Murthy vs Murty
+      if (dn.replace(/h/g,'') === qn.replace(/h/g,'')) score += 10;
+      if (score > bestScore) { bestScore = score; best = d; }
+    }
+
+    const doc = best || docs[0];
     const key = doc.key; // e.g., "/authors/OL23919A"
     const olid = key?.split('/').pop();
     const detailsRes = await fetch(`https://openlibrary.org${key}.json`);
@@ -272,7 +310,8 @@ export async function getAuthorBio(name){
       wikipediaUrl: typeof details?.wikipedia === 'string' ? details.wikipedia : null,
     };
   } catch (_) {
-    return null;
+    // Return minimal object so UI can synthesize a small bio instead of hiding the section
+    return { name: String(name).trim(), bookCount: null, notableWorks: [], topSubjects: [] };
   }
 }
 

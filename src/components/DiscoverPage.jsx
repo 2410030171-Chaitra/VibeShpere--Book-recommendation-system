@@ -3,7 +3,7 @@ import MoodSelector from './MoodSelector';
 import GoogleSignInButton from './GoogleSignInButton';
 import BookImage from './BookImage';
 // import RecentlyViewed from './RecentlyViewed';
-import { getRecommendations, getTrendingBooks } from '../services/recommendations';
+import { getRecommendations, getTrendingBooks } from '../services/recommendations2';
 import fetchBooks from '../services/googleBooks';
 
 /**

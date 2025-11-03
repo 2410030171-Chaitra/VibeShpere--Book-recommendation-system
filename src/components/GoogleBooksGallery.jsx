@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import BookImage from './BookImage.jsx';
 import fetchBooks, { fetchBooksMany } from '../services/googleBooks';
 import apiService from '../services/api';
-import { getAuthorBio, getBookInfo } from '../services/recommendations';
+import { getAuthorBio, getBookInfo } from '../services/recommendations2';
 import '../index.css';
 
 // Helpers to prefer Open Library covers when an ISBN is available (better coverage, fewer placeholders)

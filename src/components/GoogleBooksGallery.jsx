@@ -345,9 +345,51 @@ export default function GoogleBooksGallery({ userDataManager }) {
         }
       }
 
-      // If Google returned very few items (common on some networks/regions),
-      // fall back to Open Library search to augment results with proper covers.
-      if (filtered.length < 12) {
+      // If the query looks like an author search, always augment with Open Library
+      // in addition to Google results. This makes production/mobile much more robust.
+      if (authorMode) {
+        try {
+          const params = new URLSearchParams();
+          params.set('author', authorName);
+          params.set('limit', '60');
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(`https://openlibrary.org/search.json?${params.toString()}`, { signal: controller.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const json = await res.json();
+            const docs = Array.isArray(json?.docs) ? json.docs : [];
+            const olItems = [];
+            for (const d of docs) {
+              const coverId = d?.cover_i;
+              const olCover = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : null;
+              if (!olCover) continue;
+              const title = d?.title || d?.title_suggest || 'Untitled';
+              const authors = Array.isArray(d?.author_name) ? d.author_name : (d?.author_name ? [d.author_name] : []);
+              const isbn = Array.isArray(d?.isbn) && d.isbn.length ? d.isbn[0] : undefined;
+              const idKey = d.key || `${title}-${authors[0] || ''}-${coverId || ''}`;
+              olItems.push({
+                id: `ol-${idKey}`,
+                volumeInfo: {
+                  title,
+                  authors,
+                  description: d?.first_sentence || '',
+                  imageLinks: { thumbnail: olCover, smallThumbnail: olCover },
+                  industryIdentifiers: isbn ? [{ type: 'ISBN_13', identifier: isbn }] : undefined,
+                  infoLink: d?.key ? `https://openlibrary.org${d.key}` : undefined
+                }
+              });
+              if (filtered.length + olItems.length >= target) break;
+            }
+            if (olItems.length) {
+              const have = new Set(filtered.map(x=>x.id));
+              for (const it of olItems) { if (!have.has(it.id)) filtered.push(it); if (filtered.length >= target) break; }
+            }
+          }
+        } catch(_) { /* ignore */ }
+      } else if (filtered.length < 12) {
+        // If Google returned very few items (common on some networks/regions),
+        // fall back to Open Library search to augment results with proper covers.
         try {
           const params = new URLSearchParams();
           // Prefer author-focused search when we detected an author name

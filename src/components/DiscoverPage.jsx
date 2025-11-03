@@ -225,6 +225,8 @@ export default function DiscoverPage({ userDataManager }) {
         <p className="text-lg text-slate-600">
           AI-powered recommendations based on your mood and preferences
         </p>
+        {/* Temporary build marker for deployment verification. Will be removed after confirming latest build is live. */}
+        <div className="text-xs text-slate-400 mt-1" data-testid="build-tag">Build: deploy-verify-001</div>
         {fallbackActive && (
           <div className="mt-4 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800">
             You're seeing fallback recommendations because remote data couldn't be loaded. This is temporary — the live recommender will show here when available.

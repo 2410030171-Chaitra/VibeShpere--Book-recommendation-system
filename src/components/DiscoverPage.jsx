@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MoodSelector from './MoodSelector';
-import BookImage from './BookImage';
 import GoogleSignInButton from './GoogleSignInButton';
+import BookImage from './BookImage';
 // import RecentlyViewed from './RecentlyViewed';
 import { getRecommendations, getTrendingBooks } from '../services/recommendations';
 import fetchBooks from '../services/googleBooks';

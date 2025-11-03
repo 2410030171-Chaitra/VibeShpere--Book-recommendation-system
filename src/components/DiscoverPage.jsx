@@ -172,9 +172,13 @@ export default function DiscoverPage({ userDataManager }) {
     try {
       setLoading(true);
       const genre = selectedGenre === 'all' ? '' : selectedGenre;
-      
-      // Fetch recommendations from backend API with mood and genre filters
-      const formatted = await getRecommendations(selectedMood || '', genre, 40, recoSeed || undefined);
+      // Fetch recommendations with proper options (mood + genre + seed)
+      const formatted = await getRecommendations({
+        mood: selectedMood || undefined,
+        genre: genre || undefined,
+        limit: 40,
+        seed: recoSeed || undefined,
+      });
       
       if (!formatted || formatted.length === 0) {
         setFallbackActive(true);

@@ -164,21 +164,56 @@ export async function searchBooks(query, limit = 60){
 }
 
 export async function getRecommendations(opts = {}){
-  const { genres = [], authors = [], limit = 24 } = opts || {};
-  const items = await callApi('/recommend', { genres, authors, limit });
+  const {
+    mood,
+    genre,
+    genres = [],
+    authors = [],
+    limit = 24,
+    seed,
+  } = opts || {};
+  // Prefer backend if available (supports mood/genre on server side)
+  const g = [...(Array.isArray(genres) ? genres : String(genres||'').split(',').map(s=>s.trim()).filter(Boolean))];
+  if (genre && String(genre).trim() && String(genre).toLowerCase() !== 'all') g.push(String(genre).trim());
+  const items = await callApi('/recommend', { mood, genres: g, authors, limit, seed });
   if (items && items.length) return items.map(normalizeBackendItem);
-  // Lightweight fallback
-  const g = Array.isArray(genres) ? genres : String(genres || '').split(',').map(s=>s.trim()).filter(Boolean);
+  // Client fallback: map mood -> subjects, plus any genres/authors
+  const MOOD_SUBJECTS = {
+    positive: ['inspirational', 'humor', 'romance', 'self-help', 'joy', 'kindness'],
+    emotional: ['drama', 'memoir', 'biography', 'relationships', 'grief', 'healing'],
+    energetic: ['adventure', 'thriller', 'mystery', 'action', 'suspense'],
+    calm: ['poetry', 'nature', 'philosophy', 'meditation', 'mindfulness'],
+    tech: ['technology', 'science', 'programming', 'artificial intelligence', 'startup'],
+    feelgood: ['community', 'friendship', 'hope', 'uplifting', 'heartwarming'],
+  };
+
   const a = Array.isArray(authors) ? authors : String(authors || '').split(',').map(s=>s.trim()).filter(Boolean);
+  const subj = new Set();
+  if (mood && MOOD_SUBJECTS[mood]) MOOD_SUBJECTS[mood].forEach(s=>subj.add(s));
+  for (const gg of g) subj.add(gg);
   const queries = [];
-  for (const gg of g) queries.push(`subject:${gg}`);
+  for (const s of subj) queries.push(`subject:${s}`);
   for (const aa of a) queries.push(`inauthor:${aa}`);
   if (!queries.length) queries.push('bestsellers');
+
   let pool = [];
   for (const q of queries) { try { pool = pool.concat(await fetchBooksMany(q, 60)); } catch(_){ } }
   const seen = new Set(); const unique = [];
   for (const it of pool) { if (seen.has(it.id)) continue; seen.add(it.id); unique.push(it); }
-  return unique.map(normalizeFromGoogleItem).slice(0, limit);
+
+  // Seeded shuffle so different moods/seed produce different orders
+  const list = unique.map(normalizeFromGoogleItem);
+  const seeded = Number.isFinite(seed) ? seed : Math.floor(Math.random()*1e9);
+  function seededShuffle(arr, s){
+    let x = (s || 1) >>> 0;
+    const rnd = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  return seededShuffle(list, seeded).slice(0, limit);
 }
 
 export async function getBooksByAuthor(authorName, limit = 40){ return searchBooks(`author:${authorName}`, limit); }

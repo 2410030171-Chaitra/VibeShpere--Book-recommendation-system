@@ -301,9 +301,10 @@ export default function GoogleBooksGallery({ userDataManager }) {
       for (const item of pool) {
         const info = item.volumeInfo || {};
         const title = (info.title || '').trim().toLowerCase();
-        if (BLOCKED.ids.has(item.id) || BLOCKED.titles.has(title)) continue;
-  // Allow items even without a cover; a placeholder will be shown.
-  // No adult content filtering: include all
+    if (BLOCKED.ids.has(item.id) || BLOCKED.titles.has(title)) continue;
+    // Require a real cover candidate; skip otherwise (no default placeholders)
+    if (!hasCover(info)) continue;
+    // No adult content filtering: include all
         if (!isRelevant(info, mapped)) continue; // Check relevance
         if (seen.has(item.id)) continue;
         seen.add(item.id);
@@ -334,7 +335,8 @@ export default function GoogleBooksGallery({ userDataManager }) {
             const info = item.volumeInfo || {};
             const title = (info.title || '').trim().toLowerCase();
             if (BLOCKED.ids.has(item.id) || BLOCKED.titles.has(title)) continue;
-            // Allow items without covers; we'll render a placeholder instead.
+            // Require a real cover candidate in fallback too
+            if (!hasCover(info)) continue;
             // No adult content filtering in fallback
             if (!isRelevant(info, mapped)) continue; // Check relevance in fallback too
             if (seen.has(item.id)) continue;
@@ -699,6 +701,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
                     title={title}
                     author={authors}
                     className="book-cover book-cover--strict"
+                    fallbackUrl={null}
                   />
                 </div>
                 <div className="book-info">

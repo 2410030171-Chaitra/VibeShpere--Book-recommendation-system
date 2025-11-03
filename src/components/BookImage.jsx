@@ -48,7 +48,8 @@ export default function BookImage({
   ].filter(Boolean);
 
   const [candidates, setCandidates] = React.useState(candidatesInit);
-  const [src, setSrc] = React.useState(candidatesInit[0] || fallbackUrl);
+  const [src, setSrc] = React.useState(candidatesInit[0] || (fallbackUrl || null));
+  const [failed, setFailed] = React.useState(false);
 
   React.useEffect(() => {
     const next = [
@@ -58,16 +59,21 @@ export default function BookImage({
       fallbackUrl,
     ].filter(Boolean);
     setCandidates(next);
-    setSrc(next[0] || fallbackUrl);
+  setSrc(next[0] || (fallbackUrl || null));
+  setFailed(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryUrl, secondaryUrl, altIdentifiers?.isbn, fallbackUrl]);
 
   const handleError = (e) => {
     // Move to the next candidate
     if (candidates.length <= 1) {
-      // Already at last fallback; ensure it's the local asset
-      if (e && e.currentTarget && e.currentTarget.src !== fallbackUrl) {
-        e.currentTarget.src = fallbackUrl;
+      // No more candidates.
+      if (fallbackUrl) {
+        if (e && e.currentTarget && e.currentTarget.src !== fallbackUrl) {
+          e.currentTarget.src = fallbackUrl;
+        }
+      } else {
+        setFailed(true);
       }
       return;
     }
@@ -110,6 +116,8 @@ export default function BookImage({
   }
 
   const altText = author ? `${title} — ${author} (cover)` : `${title} (cover)`;
+
+  if (failed || !src) return null;
 
   return (
     <img

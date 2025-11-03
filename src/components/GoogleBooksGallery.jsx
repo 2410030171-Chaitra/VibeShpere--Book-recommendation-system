@@ -694,6 +694,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
                 <div className="book-cover-wrap">
                   <BookImage
                     primaryUrl={openLib || thumbHigh}
+                    secondaryUrl={openLib ? thumbHigh : undefined}
                     altIdentifiers={{ isbn }}
                     title={title}
                     author={authors}

@@ -12,6 +12,7 @@ import React from 'react';
  */
 export default function BookImage({
   primaryUrl,
+  secondaryUrl, // optional: try this if primary fails (e.g., Google <-> OpenLibrary)
   altIdentifiers = {},
   fallbackUrl = '/assets/default_cover.svg',
   title = 'Book cover',
@@ -34,9 +35,14 @@ export default function BookImage({
     return `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg?default=false`;
   };
 
-  // Build candidate list: primary -> Open Library (ISBN) -> fallback asset
+  // Build candidate list in order of preference:
+  // 1) primaryUrl
+  // 2) secondaryUrl (if provided)
+  // 3) Open Library by ISBN (if provided)
+  // 4) fallback asset
   const candidatesInit = [
     normalize(primaryUrl),
+    normalize(secondaryUrl),
     openLibFromIsbn(altIdentifiers?.isbn),
     fallbackUrl,
   ].filter(Boolean);
@@ -45,11 +51,16 @@ export default function BookImage({
   const [src, setSrc] = React.useState(candidatesInit[0] || fallbackUrl);
 
   React.useEffect(() => {
-    const next = [normalize(primaryUrl), openLibFromIsbn(altIdentifiers?.isbn), fallbackUrl].filter(Boolean);
+    const next = [
+      normalize(primaryUrl),
+      normalize(secondaryUrl),
+      openLibFromIsbn(altIdentifiers?.isbn),
+      fallbackUrl,
+    ].filter(Boolean);
     setCandidates(next);
     setSrc(next[0] || fallbackUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryUrl, altIdentifiers?.isbn, fallbackUrl]);
+  }, [primaryUrl, secondaryUrl, altIdentifiers?.isbn, fallbackUrl]);
 
   const handleError = (e) => {
     // Move to the next candidate
@@ -107,6 +118,8 @@ export default function BookImage({
       className={className}
       style={style}
       loading={loading}
+      referrerPolicy="no-referrer"
+      decoding="async"
       onError={handleError}
       onLoad={(e)=>{ tryUpgradeCover(e.currentTarget); }}
     />

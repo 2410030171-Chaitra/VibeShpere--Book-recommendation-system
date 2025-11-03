@@ -380,6 +380,7 @@ function BookCard({ book, isFavorite, onToggleFavorite, onView }) {
       <div className="relative overflow-hidden rounded-xl mb-3">
         <BookImage
           primaryUrl={book.cover || book.thumbnail}
+          secondaryUrl={book.cover && book.thumbnail && book.cover !== book.thumbnail ? book.thumbnail : undefined}
           altIdentifiers={{ isbn: book.isbn }}
           title={book.title}
           author={book.author}

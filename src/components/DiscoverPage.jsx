@@ -388,6 +388,7 @@ function BookCard({ book, isFavorite, onToggleFavorite, onView }) {
           title={book.title}
           author={book.author}
           className="w-full aspect-[2/3] object-cover group-hover:scale-110 transition-transform duration-500"
+          fallbackUrl={null}
         />
         
         {/* Favorite button */}

@@ -28,6 +28,13 @@ async function callApi(path, params){
   } catch(_) { return null; }
 }
 
+function getIsbnFromIds(ids){
+  const a = Array.isArray(ids) ? ids : [];
+  const i13 = a.find((t)=>t?.type==='ISBN_13')?.identifier;
+  const i10 = a.find((t)=>t?.type==='ISBN_10')?.identifier;
+  return i13 || i10 || null;
+}
+
 function normalizeBackendItem(x){
   if (!x) return null;
   const authors = Array.isArray(x.authors) ? x.authors : (x.author ? [x.author] : []);
@@ -36,7 +43,9 @@ function normalizeBackendItem(x){
     title: x.title || 'Untitled',
     authors,
     description: x.description || '',
-    cover: x.cover || x.thumbnail || '/assets/default_cover.svg',
+    cover: x.cover || x.thumbnail || null,
+    thumbnail: x.thumbnail || null,
+    isbn: x.isbn || getIsbnFromIds(x.industryIdentifiers) || null,
   };
 }
 
@@ -44,12 +53,15 @@ function normalizeFromGoogleItem(item){
   const info = item?.volumeInfo || {};
   const authors = Array.isArray(info.authors) ? info.authors : (info.authors ? [info.authors] : []);
   const img = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || null;
+  const isbn = getIsbnFromIds(info.industryIdentifiers);
   return {
     id: item?.id || `${info.title || 'untitled'}::${authors.join(',')}`,
     title: info.title || 'Untitled',
     authors,
     description: info.description || '',
-    cover: img || '/assets/default_cover.svg',
+    cover: img || null,
+    thumbnail: img || null,
+    isbn: isbn || null,
   };
 }
 
@@ -58,9 +70,9 @@ export async function getTrendingBooks(opts = {}){
   if (typeof opts === 'number') limit = opts;
   else if (opts && typeof opts === 'object') { limit = opts.limit ?? 40; country = opts.country; }
   const items = await callApi('/trending', { limit, country });
-  if (items && items.length) return items.map(normalizeBackendItem);
+  if (items && items.length) return items.map(normalizeBackendItem).filter(b=>b.cover||b.thumbnail||b.isbn).slice(0,limit);
   const pool = await fetchBooksMany('bestsellers', Math.max(120, limit * 3));
-  return pool.map(normalizeFromGoogleItem).slice(0, limit);
+  return pool.map(normalizeFromGoogleItem).filter(b=>b.cover||b.thumbnail||b.isbn).slice(0, limit);
 }
 
 export async function getTopPicks(limit = 20){
@@ -73,7 +85,7 @@ export async function getTopPicks(limit = 20){
 export async function getSavedPreferences(opts = {}){
   const { genres = [], authors = [], limit = 20 } = opts || {};
   const items = await callApi('/saved-preferences', { genres, authors, limit });
-  if (items && items.length) return items.map(normalizeBackendItem);
+  if (items && items.length) return items.map(normalizeBackendItem).filter(b=>b.cover||b.thumbnail||b.isbn).slice(0,limit);
   // fallback: mix authors + genres
   const queries = [];
   const g = Array.isArray(genres) ? genres : String(genres || '').split(',').map(s=>s.trim()).filter(Boolean);
@@ -85,7 +97,7 @@ export async function getSavedPreferences(opts = {}){
   for (const q of queries) { try { pool = pool.concat(await fetchBooksMany(q, 60)); } catch(_){} }
   const seen = new Set(); const unique = [];
   for (const it of pool) { if (seen.has(it.id)) continue; seen.add(it.id); unique.push(it); }
-  return unique.map(normalizeFromGoogleItem).slice(0, limit);
+  return unique.map(normalizeFromGoogleItem).filter(b=>b.cover||b.thumbnail||b.isbn).slice(0, limit);
 }
 
 export async function getAuthorBio(name){
@@ -155,7 +167,7 @@ export async function getBookInfo(title, author){
 export async function searchBooks(query, limit = 60){
   if (!query || String(query).trim() === '') return getTrendingBooks(limit);
   const items = await callApi('/search', { q: query, limit });
-  if (items && items.length) return items.map(normalizeBackendItem);
+  if (items && items.length) return items.map(normalizeBackendItem).filter(b=>b.cover||b.thumbnail||b.isbn).slice(0,limit);
   let q = String(query).trim();
   const authorM = q.match(/^author\s*:\s*(.+)$/i); const genreM = q.match(/^genre\s*:\s*(.+)$/i);
   if (authorM) q = `inauthor:${authorM[1]}`; else if (genreM) q = `subject:${genreM[1]}`;
@@ -202,7 +214,7 @@ export async function getRecommendations(opts = {}){
   for (const it of pool) { if (seen.has(it.id)) continue; seen.add(it.id); unique.push(it); }
 
   // Seeded shuffle so different moods/seed produce different orders
-  const list = unique.map(normalizeFromGoogleItem);
+  const list = unique.map(normalizeFromGoogleItem).filter(b=>b.cover||b.thumbnail||b.isbn);
   const seeded = Number.isFinite(seed) ? seed : Math.floor(Math.random()*1e9);
   function seededShuffle(arr, s){
     let x = (s || 1) >>> 0;

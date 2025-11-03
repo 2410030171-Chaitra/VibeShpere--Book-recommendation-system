@@ -45,8 +45,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
   const authorImgWrapRef = useRef(null);
   const authorContentRef = useRef(null);
   const [authorImgHeight, setAuthorImgHeight] = useState(null);
-  // Lightweight debug info to verify production behavior
-  const [debugInfo, setDebugInfo] = useState(null);
+  // Debug UI removed after verification
 
   // Keep the author image height in sync with the content block height so the
   // photo shows only as much as the information area (no extra tall or short).
@@ -211,7 +210,6 @@ export default function GoogleBooksGallery({ userDataManager }) {
     setLoading(true);
     setAuthorInfo(null);
     setBookInfo(null);
-    setDebugInfo(null);
     let pool = [];
     const target = 40;
     try {
@@ -251,7 +249,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
       if (!pool.length) {
         pool = await fetchBooksMany(mapped || q, 200);
       }
-      const debug = { authorMode, googleQueried: true, googlePool: (pool||[]).length, olAdded: 0 };
+      // removed debug metrics after verification
 
       // Helpers used below for filtering
       const hasCover = (info) => {
@@ -388,7 +386,6 @@ export default function GoogleBooksGallery({ userDataManager }) {
             if (olItems.length) {
               const have = new Set(filtered.map(x=>x.id));
               for (const it of olItems) { if (!have.has(it.id)) filtered.push(it); if (filtered.length >= target) break; }
-              debug.olAdded += olItems.length;
             }
           }
         } catch(_) { /* ignore */ }
@@ -434,7 +431,6 @@ export default function GoogleBooksGallery({ userDataManager }) {
             }
             if (olItems.length) {
               filtered = [...filtered, ...olItems].slice(0, target);
-              debug.olAdded += olItems.length;
             }
           }
         } catch(_) {
@@ -444,7 +440,6 @@ export default function GoogleBooksGallery({ userDataManager }) {
 
       setItems(filtered);
       setStatus(filtered.length ? `Showing ${filtered.length} result${filtered.length>1?'s':''}` : 'No results');
-      setDebugInfo(debug);
     }catch(e){
       console.error(e);
       setStatus('Could not fetch books');
@@ -500,11 +495,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
         
           <button className="btn-primary" type="submit">Search</button>
         </form>
-        {debugInfo && (
-          <div className="mt-2 text-xs text-slate-500">
-            Source: {debugInfo.authorMode ? 'Author' : 'General'} — Google {debugInfo.googlePool} + OL {debugInfo.olAdded} → showing {items.length}
-          </div>
-        )}
+        {/* Debug source line removed */}
         {authorInfo && (
           <div className="mt-4 flex gap-4 items-start p-4 rounded-lg border bg-white/70">
             {authorInfo.photo && (

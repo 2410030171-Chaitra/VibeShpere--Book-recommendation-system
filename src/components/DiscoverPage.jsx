@@ -219,7 +219,7 @@ export default function DiscoverPage({ userDataManager }) {
     <div className="discover-page max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+        <h1 data-testid="main-heading" className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
           Discover Your Next Favorite Book
         </h1>
         <p className="text-lg text-slate-600">
@@ -265,6 +265,7 @@ export default function DiscoverPage({ userDataManager }) {
             <button
               key={genre.id}
               onClick={() => { setSelectedGenre(genre.id); setShowOnlyRecommendations(true); setSelectedMood(null); }}
+              data-testid={`genre-${genre.id}`}
               className={`
                 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2
                 ${selectedGenre === genre.id
@@ -306,7 +307,7 @@ export default function DiscoverPage({ userDataManager }) {
                 >
                   Shuffle
                 </button>
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-slate-500" data-testid="books-found-count">
                   {books.length} books found
                 </span>
               </div>
@@ -388,6 +389,7 @@ function BookCard({ book, isFavorite, onToggleFavorite, onView }) {
           onClick={() => onToggleFavorite(book)}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-lg hover:scale-110 transition-transform duration-200 shadow-lg"
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          data-testid={`fav-btn-${book.id}`}
         >
           {isFavorite ? '💖' : '🤍'}
         </button>

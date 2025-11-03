@@ -5,7 +5,8 @@ import GoogleSignInButton from "./src/components/GoogleSignInButton.jsx";
 import fetchBooks, { fetchBooksMany, isBlocked } from "./src/services/googleBooks.js";
 import { getTrendingBooks, getSavedPreferences } from "./src/services/recommendations.js";
 import apiService from "./src/services/api.js";
-import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
+// RecentlyViewed component is optional; it's currently not present in src/components.
+// import RecentlyViewed from "./src/components/RecentlyViewed.jsx";
 
 // Generate a simple SVG data-URL placeholder using the book title/author so
 // each book has a unique fallback image when the remote cover fails.
@@ -2131,7 +2132,7 @@ function Profile({ user, setUser, userDataManager, setRoute }) {
 // -----------------------------
 export default function App() {
   const [user, setUser] = useState(null);
-  const [route, setRoute] = useState("dashboard");
+  const [route, setRoute] = useState("discover");
   const [theme, setTheme] = useState('morning');
   const [ratings, setRatings] = useState({ ...MOCK_USER_RATINGS });
   const [userDataManager, setUserDataManager] = useState(null);

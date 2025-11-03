@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect, useRef } from 'react';
+import BookImage from './BookImage.jsx';
 import fetchBooks, { fetchBooksMany } from '../services/googleBooks';
 import apiService from '../services/api';
 import { getAuthorBio, getBookInfo } from '../services/recommendations';
@@ -17,56 +18,9 @@ function openLibCoverUrl(isbn){
   return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
 }
 
-// ExploreCover: renders a fixed-size cover frame (180x270) and handles missing/failed images.
-function ExploreCover({ primary, fallback, title }) {
-  const [current, setCurrent] = React.useState(primary || fallback || null);
-  const [failed, setFailed] = React.useState(false);
-
-  const placeholderSvg = encodeURIComponent(`
-    <svg xmlns='http://www.w3.org/2000/svg' width='1' height='1' viewBox='0 0 1 1' preserveAspectRatio='none'>
-      <defs>
-        <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
-          <stop offset='0' stop-color='%23ffffff'/>
-          <stop offset='1' stop-color='%23f4f4f4'/>
-        </linearGradient>
-      </defs>
-      <rect width='1' height='1' fill='url(#g)'/>
-    </svg>
-  `);
-
-  // If no src or a previous load failed, show the same placeholder used in the
-  // main tiles so Explore matches the site's visual style.
-  const handleError = () => {
-    if(current && primary && current === primary && fallback){
-      setCurrent(fallback);
-      return;
-    }
-    setFailed(true);
-  };
-
-  if (!current || failed) {
-    return (
-      <div className="book-cover-wrap">
-        <img
-          className="book-cover book-cover--strict"
-          src={`data:image/svg+xml;utf8,${placeholderSvg}`}
-          alt={title}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="book-cover-wrap">
-      <img
-        className="book-cover book-cover--strict"
-        src={current}
-        alt={title}
-        onError={handleError}
-      />
-    </div>
-  );
-}
+// Note: We now use the shared BookImage for consistent fallbacks and to avoid
+// Google "image not available" thumbnails. We keep the old ExploreCover code
+// commented above for reference.
 
 export default function GoogleBooksGallery({ userDataManager }) {
   // Temporary blocklist to remove problematic or unwanted books from Explore
@@ -527,7 +481,7 @@ export default function GoogleBooksGallery({ userDataManager }) {
                         <span className="text-slate-500 mr-1">Notable works:</span>
                         {topNotables.map((t, i) => (
                           <React.Fragment key={`notable-${i}`}>
-                            <strong>{escapeHtml(t)}</strong>{i < topNotables.length - 1 ? ', ' : ''}
+                            <strong>{t}</strong>{i < topNotables.length - 1 ? ', ' : ''}
                           </React.Fragment>
                         ))}
                       </p>
@@ -644,7 +598,13 @@ export default function GoogleBooksGallery({ userDataManager }) {
             <div key={item.id} className="book-tile">
               <article className="book-card">
                 <div className="book-cover-wrap">
-                  <ExploreCover primary={openLib} fallback={thumbHigh} title={title} />
+                  <BookImage
+                    primaryUrl={openLib || thumbHigh}
+                    altIdentifiers={{ isbn }}
+                    title={title}
+                    author={authors}
+                    className="book-cover book-cover--strict"
+                  />
                 </div>
                 <div className="book-info">
                   <h3 className="book-title">{title}</h3>
